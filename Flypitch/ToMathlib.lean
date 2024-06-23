@@ -6,20 +6,14 @@ Authors: Jesse Han, Floris van Doorn
 -/
 /- theorems which we should (maybe) backport to mathlib -/
 
-import Mathlib
+-- import Mathlib
 
-universe variables u v w w'
+universe u v w w'
 
-namespace function
-lemma injective.ne_iff {α β} {f : α → β} (hf : function.injective f) {a₁ a₂ : α} :
-  f a₁ ≠ f a₂ ↔ a₁ ≠ a₂ :=
-not_congr hf.eq_iff
-end function
+inductive DVector (α : Type u) : ℕ → Type u where
+| nil : DVector α 0
+| cons : α → {n : ℕ} → DVector α n → DVector α (n+1)
 
-inductive dvector (α : Type u) : ℕ → Type u
-| nil {} : dvector 0
-| cons : ∀{n} (x : α) (xs : dvector n), dvector (n+1)
-
-inductive dfin : ℕ → Type
-| fz {n} : dfin (n+1)
-| fs {n} : dfin n → dfin (n+1)
+inductive DFin : ℕ → Type
+| fz {n} : DFin (n+1)
+| fs {n} : DFin n → DFin (n+1)
