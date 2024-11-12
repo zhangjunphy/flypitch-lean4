@@ -6,20 +6,46 @@ Authors: Jesse Han, Floris van Doorn
 -/
 /- theorems which we should (maybe) backport to mathlib -/
 
-import Mathlib
+import Mathlib.Algebra.Free
 
-universe variables u v w w'
+variable (u v w w' : Prop)
 
-namespace function
-lemma injective.ne_iff {α β} {f : α → β} (hf : function.injective f) {a₁ a₂ : α} :
-  f a₁ ≠ f a₂ ↔ a₁ ≠ a₂ :=
-not_congr hf.eq_iff
-end function
+inductive DVector (α : Type u) : ℕ → Type u
+| nil : DVector α 0
+| cons : ∀{n} (x : α) (xs : DVector α n), DVector α (n+1)
 
-inductive dvector (α : Type u) : ℕ → Type u
-| nil {} : dvector 0
-| cons : ∀{n} (x : α) (xs : dvector n), dvector (n+1)
+inductive DFin : ℕ → Type
+| fz {n} : DFin (n+1)
+| fs {n} : DFin n → DFin (n+1)
 
-inductive dfin : ℕ → Type
-| fz {n} : dfin (n+1)
-| fs {n} : dfin n → dfin (n+1)
+class HasZero (α : Type u) := (zero : α)
+
+instance hasZeroDFin {n} : HasZero $ DFin (n+1) := ⟨DFin.fz⟩
+
+-- note from Mario --- use dfin to synergize with dvector
+namespace DVector
+section DVectors
+local notation h "::" t  => DVector.cons h t
+syntax (priority := high) "[" term,* "]" : term
+macro_rules
+  | `([]) => `(DVector.nil)
+  | `([$x]) => `(DVector.cons $x [])
+  | `([$x, $xs:term,*]) => `(DVector.cons $x [$xs,*])
+variable {α : Type u} {β : Type v} {γ : Type w} {n : ℕ}
+
+@[simp] protected lemma zero_eq : ∀(xs : DVector α 0), xs = []
+| [] => rfl
+
+@[simp] protected def concat {n : ℕ} (xs : DVector α n) (x : α) : DVector α (n+1) :=
+match xs with
+  | [] => [x]
+  | x::xs => x::(DVector.concat xs x)
+
+@[simp] protected def nth : ∀{n : ℕ} (xs : DVector α n) (m : ℕ) (h : m < n), α
+| _ []      m     h => by { exfalso, exact nat.not_lt_zero m h }
+| _ (x::xs) 0     h => x
+| _ (x::xs) (m+1) h => nth xs m (lt_of_add_lt_add_right h)
+
+end DVectors
+
+end DVector
