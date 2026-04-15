@@ -14,3 +14,4 @@
 /blueprint/src/*.toc
 /blueprint/src/*.paux
 /home_page/_site
+.omx/

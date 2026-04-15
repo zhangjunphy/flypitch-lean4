@@ -21,12 +21,12 @@ The upstream project breaks into two large branches that meet in `zfc.lean`.
    - `henkin`
    - `completeness`
 2. Set-theory/forcing branch
+   - `bv_tauto`
    - `pSet_ordinal`
    - `set_theory`
    - `regular_open_algebra`
    - `cantor_space`
    - `collapse`
-   - `bv_tauto`
    - `bvm`
    - `bvm_extras`
    - `bvm_extras2`
@@ -77,7 +77,9 @@ The upstream project breaks into two large branches that meet in `zfc.lean`.
 - [x] Port Henkin witness properties, `witInfty`, the raw `ι`/`T_infty` theory-chain scaffolding, and the enough-constants proof for `henkinization`.
 - [x] Port the fresh-constant generalization layer in `Flypitch/LanguageExtension.lean` (`boundedFormulaSubstSentence`, `generalize_constant`, `sgeneralize_constant`).
 - [x] Finish the henkinization/completed-theory bridge on top of the now-ported `henkinTheoryStep`, `ι`-chain, and `T_infty` consistency proofs.
-- [ ] Port `pSet_ordinal` as the first forcing-side hard dependency.
+- [x] Port the first Boolean-valued tautology helper file in `Flypitch/BVTauto.lean`.
+- [ ] Port the remaining term-model/completeness tail needed for upstream `completeness.lean`.
+- [ ] Port the forcing-side root files `pSet_ordinal.lean` and `set_theory.lean`.
 - [ ] Port the topology/regular-open/collapse stack.
 - [ ] Port Boolean-valued models.
 - [ ] Reconnect both branches in `zfc`.
@@ -103,30 +105,48 @@ Every completed milestone must satisfy both checks:
 - `Flypitch/Colimit.lean`
 - `Flypitch/LanguageExtension.lean`
 - `Flypitch/Henkin.lean`
+- `Flypitch/BVTauto.lean`
 - `Flypitch/Examples/Abel.lean`
+- `Flypitch/PSetOrdinal.lean`
 
 ## Next Blocker
 
-The Henkin tranche is now materially complete. The repository has the directed-colimit,
-language-extension, Henkin language-chain infrastructure, the induced comparison maps into
-`LInfty`, bijectivity for term/formula/bounded-term/bounded-formula comparison maps, the
-bounded-formula equivalence needed to choose representatives, the witness-property definition,
-the extracted `witInfty` representative, the recursive Henkin theory step, the raw `ι` chain
-inside `Theory (LInfty L)`, the induced inclusion lemmas along that chain, the `T_infty` union
-theory definition, the enough-constants proof for `henkinization`, the fresh-constant
-generalization package in `LanguageExtension.lean`
-(`boundedFormulaSubstSentence`, `generalize_constant`, `sgeneralize_constant`), the one-step
-consistency proof `is_consistent_henkinTheoryStep`, the induced consistency of the full
-`henkinTheoryChain`, the consistency of each `iota n`, `T_infty`, and `henkinization`, and the
-bridge theorem producing a complete Henkin extension over `henkinization`.
+`lake build` currently succeeds, but the repository is not as far along as the old plan
+suggested.
 
-The next critical blocker has therefore shifted to the forcing side, starting with
-`pSet_ordinal`.
+Evidence-backed status:
 
-The next Lean 4 tranche is:
+- The logic/Henkin chain now builds through `Flypitch/Henkin.lean`, including the completed
+  Henkinization bridge to a complete Henkin extension.
+- The upstream `completeness.lean` file is still **not** ported, and the supporting late-`fol`
+  term-model material used by upstream completeness (`term_model`, `nonempty_term_model`,
+  `completion_of_henkinization`, and the reduct-to-`T` satisfaction lemmas) is also still
+  absent from the Lean 4 tree.
+- On the forcing side, `Flypitch/PSetOrdinal.lean` is only an initial bridge layer rather than a
+  complete port of upstream `pSet_ordinal.lean`.
+- `Flypitch/BVTauto.lean` is now present as the first fully ported forcing-root utility file.
+- `Flypitch/PSetOrdinal.lean` now contains the initial ordinal/cardinal bridge layer, the first
+  structural `PSet` well-foundedness/transitivity lemmas used to model ordinal-shaped pre-sets,
+  a first pass of function-graph infrastructure (`pair`, `prod`, `is_func`, `functions`,
+  injectivity/surjectivity predicates), and the first finite-ordinal subset/membership lemmas
+  (`subset_of_le`, `of_nat_mem_of_lt`, `of_nat_is_transitive`) needed by later forcing/set-theory
+  files.
+- `Flypitch/SetTheory.lean` now exists and contains the first delta-system tranche from upstream:
+  the core definition plus the basic preimage/image/reindexing preservation lemmas.
 
-- `henkin.lean`
-- `completeness.lean`
+So the real near-term blockers are split across **both** major branches:
 
-After that, the remaining logic/completeness dependency chain is the rest of `henkin.lean` followed by
-`completeness.lean`. The forcing branch still starts later at `pSet_ordinal.lean`.
+1. finish the remaining logic-side completeness prerequisites and port `completeness.lean`;
+2. finish the two forcing root files `pSet_ordinal.lean` and `set_theory.lean`, which unblock
+   the downstream forcing/topology stack.
+
+The next Lean 4 tranche should therefore be chosen from these root blockers based on local
+traction rather than the older linear estimate. After the current `BVTauto` milestone, the two
+most direct large targets are:
+
+- `pSet_ordinal.lean`
+- `set_theory.lean`
+
+while the main logic-side blocker remains:
+
+- `completeness.lean` together with its missing term-model support.

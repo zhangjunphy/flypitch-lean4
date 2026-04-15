@@ -2,6 +2,7 @@ import Flypitch.Colimit
 import Flypitch.Compactness
 import Flypitch.Compat.Core
 import Flypitch.Completion
+import Flypitch.BVTauto
 import Flypitch.Examples.Abel
 import Flypitch.FOL
 import Flypitch.FOL.Bounded
@@ -12,3 +13,5 @@ import Flypitch.FOL.Syntax
 import Flypitch.FOL.Theory
 import Flypitch.Henkin
 import Flypitch.LanguageExtension
+import Flypitch.PSetOrdinal
+import Flypitch.SetTheory

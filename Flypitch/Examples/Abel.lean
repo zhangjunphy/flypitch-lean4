@@ -9,40 +9,51 @@ open fol
 local notation "[]" => dvector.nil
 local infixr:67 " :: " => dvector.cons
 
+/-- Function symbols for the language of Abelian groups with a constant zero and binary addition. -/
 inductive Functions : Nat → Type
   | zero : Functions 0
   | plus : Functions 2
 
+/-- The first-order language of Abelian groups. -/
 def LAbel : Language where
   functions := Functions
   relations := fun _ => PEmpty
 
+/-- The constant term naming the additive identity. -/
 def zeroTerm : term LAbel :=
   preterm.func Functions.zero
 
+/-- The term forming the sum of two Abelian-group expressions. -/
 def addTerm (t₁ t₂ : term LAbel) : term LAbel :=
   apps (preterm.func Functions.plus) (t₁ :: t₂ :: [])
 
 local infixl:65 " +' " => addTerm
 
+/-- Associativity axiom for the Abelian-group language. -/
 def aAssoc : formula LAbel :=
   ∀' ∀' ∀' ((((&2 +' &1) +' &0) ≃ (&2 +' (&1 +' &0))))
 
+/-- Right-identity axiom for the Abelian-group language. -/
 def aZeroRight : formula LAbel :=
   ∀' (((&0 +' zeroTerm) ≃ &0))
 
+/-- Left-identity axiom for the Abelian-group language. -/
 def aZeroLeft : formula LAbel :=
   ∀' (((zeroTerm +' &0) ≃ &0))
 
+/-- Inverse axiom for the Abelian-group language. -/
 def aInv : formula LAbel :=
   ∀' ex (fol.and (((&1 +' &0) ≃ zeroTerm)) (((&0 +' &1) ≃ zeroTerm)))
 
+/-- Commutativity axiom for the Abelian-group language. -/
 def aComm : formula LAbel :=
   ∀' ∀' (((&1 +' &0) ≃ (&0 +' &1)))
 
+/-- The theory of Abelian groups in the language `LAbel`. -/
 def TAb : Set (formula LAbel) :=
   insert aAssoc (insert aZeroRight (insert aZeroLeft (insert aInv (insert aComm ∅))))
 
+/-- The standard integer model of the Abelian-group language. -/
 def intStructure : Structure LAbel where
   carrier := Int
   fun_map := by
@@ -81,12 +92,12 @@ theorem int_satisfies_assoc : satisfied_in intStructure aAssoc := by
 
 theorem int_satisfies_zeroRight : satisfied_in intStructure aZeroRight := by
   intro v x
-  simp [aZeroRight, addTerm, apps, realize_term]
+  simp [addTerm, apps, realize_term]
   rfl
 
 theorem int_satisfies_zeroLeft : satisfied_in intStructure aZeroLeft := by
   intro v x
-  simp [aZeroLeft, addTerm, apps, realize_term]
+  simp [addTerm, apps, realize_term]
   rfl
 
 theorem int_satisfies_inv : satisfied_in intStructure aInv := by
@@ -107,8 +118,9 @@ theorem int_satisfies_comm : satisfied_in intStructure aComm := by
 
 theorem int_satisfies_TAb : all_satisfied_in intStructure TAb := by
   intro f hf
-  simp [TAb, Set.mem_insert_iff] at hf
-  rcases hf with rfl | rfl | rfl | rfl | rfl
+  have hf' : f = aAssoc ∨ f = aZeroRight ∨ f = aZeroLeft ∨ f = aInv ∨ f = aComm := by
+    simpa [TAb, Set.mem_insert_iff] using hf
+  rcases hf' with rfl | rfl | rfl | rfl | rfl
   · exact int_satisfies_assoc
   · exact int_satisfies_zeroRight
   · exact int_satisfies_zeroLeft

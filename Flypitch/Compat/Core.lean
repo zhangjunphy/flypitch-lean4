@@ -11,16 +11,16 @@ utilities used by the original development. They provide the lightweight data st
 arity helpers that the first-order syntax layer builds on.
 -/
 
-set_option linter.missingDocs false
-
 theorem Function.Injective.ne_iff {α β : Sort _} {f : α → β} (hf : Function.Injective f)
     {a₁ a₂ : α} : f a₁ ≠ f a₂ ↔ a₁ ≠ a₂ :=
   not_congr hf.eq_iff
 
+/-- A dependently typed vector carrying its length in the index. -/
 inductive dvector (α : Type u) : Nat → Type u
   | nil : dvector α 0
   | cons : {n : Nat} → α → dvector α n → dvector α (n + 1)
 
+/-- Finite indices for `dvector`, matching the shape of the original Flypitch development. -/
 inductive dfin : Nat → Type
   | fz : {n : Nat} → dfin (n + 1)
   | fs : {n : Nat} → dfin n → dfin (n + 1)
@@ -38,10 +38,12 @@ local infixr:67 " :: " => dvector.cons
 theorem zero_eq : (xs : dvector α 0) → xs = []
   | [] => rfl
 
+/-- Append an element to the right end of a dependent vector. -/
 @[simp] def concat : {n : Nat} → dvector α n → α → dvector α (n + 1)
   | _, [], x => x :: []
   | _, y :: ys, x => y :: concat ys x
 
+/-- Return the entry at a natural-number index with a proof that the index is in range. -/
 @[simp] def nth : {n : Nat} → (xs : dvector α n) → (m : Nat) → m < n → α
   | _, [], m, h => False.elim (Nat.not_lt_zero m h)
   | _, x :: _, 0, _ => x
@@ -51,16 +53,20 @@ theorem zero_eq : (xs : dvector α 0) → xs = []
     nth (x :: xs) (m + 1) (Nat.succ_lt_succ h) = nth xs m h := by
   simp [nth]
 
+/-- Return the last entry of a nonempty dependent vector. -/
 @[reducible, simp] def last (xs : dvector α (n + 1)) : α :=
   nth xs n (Nat.lt_succ_self n)
 
+/-- Return the entry at a bundled `Fin` index. -/
 def nth' (xs : dvector α n) (m : Fin n) : α :=
   nth xs m.1 m.2
 
+/-- Return the entry at a `dfin` index. -/
 def nth'' : {n : Nat} → dvector α n → dfin n → α
   | _, x :: _, .fz => x
   | _, _ :: xs, .fs m => nth'' xs m
 
+/-- Propositional membership for `dvector`. -/
 def mem (x : α) : {n : Nat} → dvector α n → Prop
   | _, [] => False
   | _, y :: ys => x = y ∨ mem x ys
@@ -68,6 +74,7 @@ def mem (x : α) : {n : Nat} → dvector α n → Prop
 instance : Membership α (dvector α n) where
   mem xs x := mem x xs
 
+/-- Proof-relevant membership for `dvector`. -/
 def pmem (x : α) : {n : Nat} → dvector α n → Type _
   | _, [] => Empty
   | _, y :: ys => PSum (x = y) (pmem x ys)
@@ -79,6 +86,7 @@ theorem mem_of_pmem {x : α} : {n : Nat} → {xs : dvector α n} → xs.pmem x �
       | PSum.inl h' => Or.inl h'
       | PSum.inr h' => Or.inr (mem_of_pmem h')
 
+/-- Map a function over every entry of a dependent vector. -/
 @[simp] def map (f : α → β) : {n : Nat} → dvector α n → dvector β n
   | _, [] => []
   | _, x :: xs => f x :: map f xs
@@ -125,14 +133,17 @@ variable {α : Type u} {β : Type u} {γ : Type u}
 local notation "[]" => dvector.nil
 local infixr:67 " :: " => dvector.cons
 
+/-- Lift a constant value to an `n`-ary function that ignores all arguments. -/
 def constant : {n : Nat} → β → arity' α β n
   | 0, b => b
   | _ + 1, b => fun _ => constant b
 
+/-- Convert a dependent-vector function into its curried `arity'` form. -/
 @[simp] def ofDVectorMap : {l : Nat} → ((xs : dvector α l) → β) → arity' α β l
   | 0, f => f []
   | _ + 1, f => fun x => ofDVectorMap (fun xs => f (x :: xs))
 
+/-- Apply a curried `arity'` function to all arguments from a dependent vector. -/
 @[simp] def app : {l : Nat} → arity' α β l → dvector α l → β
   | 0, b, [] => b
   | _ + 1, f, x :: xs => app (f x) xs
@@ -141,10 +152,12 @@ def constant : {n : Nat} → β → arity' α β n
   cases xs
   simp [app]
 
+/-- Postcompose the result of an `arity'` function with a map on outputs. -/
 def postcompose (g : β → γ) : {n : Nat} → arity' α β n → arity' α γ n
   | 0, b => g b
   | _ + 1, f => fun x => postcompose g (f x)
 
+/-- Precompose every argument position of an `arity'` function with the same map. -/
 def precompose : {n : Nat} → arity' β γ n → (α → β) → arity' α γ n
   | 0, g, _ => g
   | _ + 1, g, f => fun x => precompose (g (f x)) f
