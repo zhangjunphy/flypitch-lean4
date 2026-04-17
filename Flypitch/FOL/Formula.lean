@@ -11,6 +11,8 @@ derived connectives, recursors, and the lifting/substitution lemmas used to mana
 de Bruijn variables.
 -/
 
+set_option linter.missingDocs false
+
 local notation "[]" => dvector.nil
 local infixr:67 " :: " => dvector.cons
 
@@ -358,3 +360,6 @@ def quantifier_free {l : Nat} (f : preformula L l) : Prop :=
 
 end fol
 end Flypitch
+
+attribute [nolint docBlame]
+  Flypitch.fol.«term_≃_» Flypitch.fol.«term_⟹_» Flypitch.fol.«term∀'_» Flypitch.fol.«term∼_»

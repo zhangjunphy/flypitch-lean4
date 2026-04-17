@@ -12,6 +12,8 @@ first-order structures. It defines term and formula realization, semantic conseq
 proves the soundness of the natural-deduction rules.
 -/
 
+set_option linter.missingDocs false
+
 local notation "[]" => dvector.nil
 local infixr:67 " :: " => dvector.cons
 
@@ -364,3 +366,7 @@ theorem formula_soundness {Γ : Set (formula L)} {A : formula L} (h : Γ ⊢ A) 
 
 end fol
 end Flypitch
+
+attribute [nolint docBlame]
+  Flypitch.fol.Structure.carrier Flypitch.fol.Structure.fun_map Flypitch.fol.Structure.rel_map
+  Flypitch.fol.«term_⊨_»

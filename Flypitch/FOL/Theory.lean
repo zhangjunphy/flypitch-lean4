@@ -562,3 +562,7 @@ abbrev complete_theory (T : Theory L) : Prop :=
 
 end fol
 end Flypitch
+
+attribute [nolint docBlame]
+  Flypitch.fol.«term_⟹__1» Flypitch.fol.«term∼__1» Flypitch.fol.Theory.carrier
+  Flypitch.fol.Theory.fst Flypitch.fol.«term_⊢__1» Flypitch.fol.«term_⊢'__1»

@@ -8,6 +8,9 @@ namespace fol
 
 open Classical
 
+set_option linter.missingDocs false
+set_option linter.style.longLine false
+
 variable {L : Language.{u}}
 
 @[simp] theorem Theory.union_singleton_eq_insert (T : Theory L) (f : sentence L) :
@@ -256,3 +259,7 @@ noncomputable def completion_of_consis (T : Theory L) (h_consis : is_consistent 
 
 end fol
 end Flypitch
+
+attribute [nolint docBlame]
+  Flypitch.fol.Theory_over Flypitch.fol.TheoryOverSubset Flypitch.fol.Theory_over_subset
+  Flypitch.fol.chainTheoryUnion Flypitch.fol.limitTheory Flypitch.fol.limit_theory

@@ -11,6 +11,8 @@ variables stay below a prescribed bound. These bounded wrappers are used to repr
 closed syntax and to build Henkin witnesses later in the development.
 -/
 
+set_option linter.missingDocs false
+
 local notation "[]" => dvector.nil
 local infixr:67 " :: " => dvector.cons
 
@@ -244,3 +246,6 @@ theorem bd_ex_fst {n : Nat} (f : bounded_formula L (n + 1)) :
 
 end fol
 end Flypitch
+
+attribute [nolint docBlame]
+  Flypitch.fol.bounded_preterm.fst Flypitch.fol.bounded_preformula.fst

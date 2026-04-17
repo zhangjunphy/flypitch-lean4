@@ -78,6 +78,33 @@ The upstream project breaks into two large branches that meet in `zfc.lean`.
 - [x] Port the fresh-constant generalization layer in `Flypitch/LanguageExtension.lean` (`boundedFormulaSubstSentence`, `generalize_constant`, `sgeneralize_constant`).
 - [x] Finish the henkinization/completed-theory bridge on top of the now-ported `henkinTheoryStep`, `ι`-chain, and `T_infty` consistency proofs.
 - [x] Port the first Boolean-valued tautology helper file in `Flypitch/BVTauto.lean`.
+- [x] Port the `functions x 2 ↪ powerset x` injection tranche in `Flypitch/PSetOrdinal.lean`
+  (`f2ip`, `mem_f2ip_iff`, `functions_to_2_eq`, `functions_2_injects_into_powerset`).
+- [x] Close the next `PSetOrdinal` API tranche around function congruence/extensionality and
+  `injects_into` transport (`is_func_congr_right`, `is_extensional_of_is_func`,
+  `mk_is_injective_function`, `injects_into_refl`, `injects_into_congr_*`).
+- [x] Add the next `PSetOrdinal` compatibility/helper tranche (`is_func_iff`,
+  `is_extensional_of_mem_functions`, `set_of_indicator`, `powerset_sound`).
+- [x] Add the next upstream-name compatibility tranche around weak function lifts
+  (`function_lift_spec`, `function_lift'_spec`, `mem_fun_of_function_lift'_graph`,
+  `function_lift_graph_of_mem_fun_inj`, `surj_lift'`).
+- [x] Add the next set-level soundness bridge in `PSetOrdinal` (`prod_sound`).
+- [x] Add the next quotient/membership compatibility tranche in `PSetOrdinal`
+  (`equiv_of_eq`, `equiv_iff_eq`, `mem_iff`, `not_mem_iff`, `mem_sound`,
+  `mem_insert`, `mem_insert'`, `Set.subset_iff_all_mem`, `empty_empty`,
+  `Set.mk_unfold`).
+- [x] Add the next tiny compatibility aliases and soundness bridge
+  (`pair_mem.congr_left/right`, `function_lift'_graph_of_mem_fun_inj`, `is_func_sound`).
+- [x] Add the next ordinal/cardinal compatibility aliases
+  (`mk_type_mk_eq`, `ordinal.mk_card`, `two_eq_succ_one`, `add_one_lt_add_one`, `one_lt_two`).
+- [x] Add the next structural compatibility tranche (`mk_eq`, `eta`, `mk_zero_type`,
+  `mk_zero_cast`, `mk_zero_cast'`, `mk_zero_forall`, `mk_succ`, `succ_type_cast*`,
+  `option_cast'`, `succ_func_*`, `succ_type_forall/exists`, `option_succ_type_forall`).
+- [x] Expand `Flypitch/SetTheory.lean` beyond the initial delta-system core with the next
+  upstream-compatible helper tranche (`Set.finite_of_finite_image_of_inj_on`,
+  `Set.countable_of_embedding`, `Set.eqOn'`, `Set.eqOn'_iff`,
+  `countable_chain_condition`, `countable_chain_condition_of_nonempty`,
+  `countable_chain_condition_of_countable`).
 - [ ] Port the remaining term-model/completeness tail needed for upstream `completeness.lean`.
 - [ ] Port the forcing-side root files `pSet_ordinal.lean` and `set_theory.lean`.
 - [ ] Port the topology/regular-open/collapse stack.
@@ -128,11 +155,30 @@ Evidence-backed status:
 - `Flypitch/PSetOrdinal.lean` now contains the initial ordinal/cardinal bridge layer, the first
   structural `PSet` well-foundedness/transitivity lemmas used to model ordinal-shaped pre-sets,
   a first pass of function-graph infrastructure (`pair`, `prod`, `is_func`, `functions`,
-  injectivity/surjectivity predicates), and the first finite-ordinal subset/membership lemmas
-  (`subset_of_le`, `of_nat_mem_of_lt`, `of_nat_is_transitive`) needed by later forcing/set-theory
-  files.
+  injectivity/surjectivity predicates), the `functions x 2 ↪ powerset x` injection section
+  (`f2ip`, `mem_f2ip_iff`, `functions_to_2_eq`, `functions_2_injects_into_powerset`), the
+  follow-up closure lemmas around function congruence/extensionality and `injects_into`, a small
+  compatibility/helper layer (`is_func_iff`, `is_extensional_of_mem_functions`,
+  `set_of_indicator`, `powerset_sound`, `prod_sound`), an upstream-name compatibility layer
+  around weak function lifts (`function_lift_spec`, `function_lift'_spec`,
+  `mem_fun_of_function_lift'_graph`, `function_lift_graph_of_mem_fun_inj`, `surj_lift'`), a
+  quotient/membership compatibility layer (`equiv_of_eq`, `equiv_iff_eq`, `mem_iff`,
+  `not_mem_iff`, `mem_sound`, `mem_insert`, `mem_insert'`, `Set.subset_iff_all_mem`,
+  `empty_empty`, `Set.mk_unfold`), tiny namespace/name-alignment aliases
+  (`pair_mem.congr_left/right`, `function_lift'_graph_of_mem_fun_inj`), the set-level
+  function soundness bridge `is_func_sound`, a small ordinal/cardinal alias layer
+  (`mk_type_mk_eq`, `ordinal.mk_card`, `two_eq_succ_one`, `add_one_lt_add_one`, `one_lt_two`),
+  and a structural compatibility tranche (`mk_eq`, `eta`, `mk_zero_type`, `mk_zero_cast`,
+  `mk_zero_cast'`, `mk_zero_forall`, `mk_succ`, `succ_type_cast*`, `option_cast'`,
+  `succ_func_*`, `succ_type_forall/exists`, `option_succ_type_forall`), and the first finite-ordinal
+  subset/membership lemmas (`subset_of_le`,
+  `of_nat_mem_of_lt`, `of_nat_is_transitive`) needed by later forcing/set-theory files.
 - `Flypitch/SetTheory.lean` now exists and contains the first delta-system tranche from upstream:
-  the core definition plus the basic preimage/image/reindexing preservation lemmas.
+  the core definition plus the basic preimage/image/reindexing preservation lemmas, the first
+  small `Set` helper tranche (`finite_of_finite_image_of_inj_on`, `countable_of_embedding`,
+  `eqOn'`, `eqOn'_iff`), and the opening countable-chain-condition API
+  (`countable_chain_condition`, `countable_chain_condition_of_nonempty`,
+  `countable_chain_condition_of_countable`).
 
 So the real near-term blockers are split across **both** major branches:
 

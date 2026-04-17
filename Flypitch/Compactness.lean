@@ -8,6 +8,9 @@ namespace Flypitch
 
 open Classical
 
+set_option linter.missingDocs false
+set_option linter.style.longLine false
+
 def list_except {α : Type u} [DecidableEq α] (xs : List α) (x : α) (T : Set α)
     (h : ∀ y ∈ xs, y ≠ x → y ∈ T) :
     Σ' ys : List α, ({ϕ | ϕ ∈ ys} ⊆ T ∧ (∀ y ∈ ys, y ≠ x)) ∧ (∀ y ∈ xs, y ≠ x → y ∈ ys) := by
@@ -307,3 +310,7 @@ theorem is_consistent_union {L : Language.{u}} {T₁ T₂ : Theory L} (h₁ : is
 
 end fol
 end Flypitch
+
+attribute [nolint docBlame]
+  Flypitch.list_except Flypitch.fol.finTheory Flypitch.fol.image_lift
+  Flypitch.fol.image_lift_list

@@ -12,6 +12,8 @@ and substitution operations on them. The lemmas in this file are the basic bookk
 used throughout the later semantic and proof-theoretic developments.
 -/
 
+set_option linter.missingDocs false
+
 open Nat
 
 variable {S : Type u}
@@ -755,3 +757,8 @@ theorem subst_term2 : ∀ {l : Nat} (t : preterm L l) (s₁ s₂ : term L) (n₁
 
 end fol
 end Flypitch
+
+attribute [nolint docBlame]
+  Flypitch.fol.«term_[_//_]» Flypitch.fol.Language.functions Flypitch.fol.Language.relations
+  Flypitch.fol.«term&_» Flypitch.fol.preterm.change_arity' Flypitch.fol.«term_↑'_#_»
+  Flypitch.fol.«term_↑_» Flypitch.fol.«term_[_//_]_1»

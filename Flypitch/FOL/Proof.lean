@@ -13,6 +13,8 @@ developed in this repository, together with the structural operations on derivat
 used throughout the completeness proof.
 -/
 
+set_option linter.missingDocs false
+
 variable {L : Language}
 
 /-- Natural-deduction derivations from a set of assumptions. -/
@@ -405,3 +407,6 @@ noncomputable def reflect_prf_lift1 {Γ : Set (formula L)} {f : formula L}
 
 end fol
 end Flypitch
+
+attribute [nolint docBlame]
+  Flypitch.fol.«term_⊢_» Flypitch.fol.«term_⊢'_»

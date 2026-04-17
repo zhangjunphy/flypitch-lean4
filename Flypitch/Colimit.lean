@@ -120,6 +120,7 @@ instance coproduct_setoid {D : directed_type.{u}} (F : directed_diagram D) :
     Setoid (coproduct_of_directed_diagram F) :=
   ⟨germ_relation F, germ_equivalence F⟩
 
+/-- The quotient colimit of a directed diagram of types. -/
 abbrev colimit {D : directed_type.{u}} (F : directed_diagram D) :=
   Quotient (coproduct_setoid F)
 
@@ -270,3 +271,17 @@ open colimit
 
 end omega_colimit
 end Flypitch
+
+attribute [nolint docBlame]
+  Flypitch.colimit.directed_type Flypitch.colimit.directed_type.carrier
+  Flypitch.colimit.directed_type.rel Flypitch.colimit.directed_diagram
+  Flypitch.colimit.directed_diagram.obj Flypitch.colimit.directed_diagram.mor
+  Flypitch.colimit.termℕ' Flypitch.colimit.constant_functor
+  Flypitch.colimit.coproduct_of_directed_diagram Flypitch.colimit.canonical_inclusion_coproduct
+  Flypitch.colimit.germ_relation Flypitch.colimit.colimit Flypitch.colimit.canonical_map
+  Flypitch.colimit.cocone Flypitch.colimit.cocone.vertex Flypitch.colimit.cocone.map
+  Flypitch.colimit.cocone_of_colimit Flypitch.colimit.universal_map Flypitch.colimit.germ_rep
+  Flypitch.colimit.push_to_sum_r Flypitch.colimit.push_to_sum_l
+
+attribute [nolint dupNamespace]
+  Flypitch.colimit.colimit

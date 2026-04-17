@@ -12,6 +12,7 @@ constructions used later in the Henkin and completeness arguments.
 -/
 
 set_option linter.missingDocs false
+set_option linter.style.longLine false
 
 open Set
 
@@ -1336,3 +1337,18 @@ end Lhom
 
 end fol
 end Flypitch
+
+attribute [nolint docBlame]
+  Flypitch.fol.Language.Lconstants Flypitch.fol.Language.sum Flypitch.fol.Language.symbols
+  Flypitch.fol.symbols_in_term Flypitch.fol.symbols_in_formula Flypitch.fol.Lhom
+  Flypitch.fol.Lhom.on_function Flypitch.fol.Lhom.on_relation Flypitch.fol.«term_→ᴸ_»
+  Flypitch.fol.Lhom.id Flypitch.fol.Lhom.sum_inl Flypitch.fol.Lhom.sum_inr
+  Flypitch.fol.Lhom.comp Flypitch.fol.Lhom.is_injective Flypitch.fol.Lhom.has_decidable_range
+  Flypitch.fol.Lhom.on_symbol Flypitch.fol.Lhom.on_term Flypitch.fol.Lhom.on_formula
+  Flypitch.fol.Lhom.on_bounded_term Flypitch.fol.Lhom.on_bounded_formula
+  Flypitch.fol.Lhom.on_closed_term Flypitch.fol.Lhom.on_sentence
+  Flypitch.fol.Lhom.filter_symbols Flypitch.fol.Lhom.filter_symbols_Lhom
+  Flypitch.fol.Lhom.find_term_filter_symbols Flypitch.fol.Lhom.find_formula_filter_symbols
+  Flypitch.fol.Lhom.on_prf Flypitch.fol.Lhom.Theory_induced Flypitch.fol.Lhom.on_sprf
+  Flypitch.fol.Lhom.reduct Flypitch.fol.Lhom.reflect_term Flypitch.fol.Lhom.reflect_formula
+  Flypitch.fol.Lhom.reflect_prf_gen Flypitch.fol.Lhom.reflect_prf Flypitch.fol.Lhom.reflect_sprf

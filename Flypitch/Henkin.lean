@@ -1648,3 +1648,28 @@ noncomputable def completeHenkinizationOfConsis {L : Language.{u}} {T : Theory L
 end henkin
 
 end Flypitch
+
+attribute [nolint docBlame]
+  Flypitch.colimit.directed_diagram_language Flypitch.colimit.directed_diagram_language.obj
+  Flypitch.colimit.directed_diagram_language.mor Flypitch.colimit.diagram_functions
+  Flypitch.colimit.diagram_relations Flypitch.colimit.colimit_language
+  Flypitch.colimit.canonical_map_language Flypitch.colimit.cocone_language
+  Flypitch.colimit.cocone_language.vertex Flypitch.colimit.cocone_language.map
+  Flypitch.colimit.cocone_of_colimit_language Flypitch.colimit.universal_map_language
+  Flypitch.henkin.languageFunctions Flypitch.henkin.languageStep Flypitch.henkin.wit'
+  Flypitch.henkin.inclusion Flypitch.henkin.chainObjects Flypitch.henkin.chainMaps
+  Flypitch.henkin.languageChain Flypitch.henkin.LInfty Flypitch.henkin.canonicalMap
+  Flypitch.henkin.termChain Flypitch.henkin.formulaChain Flypitch.henkin.boundedTermChain
+  Flypitch.henkin.boundedTermChain' Flypitch.henkin.boundedFormulaChain
+  Flypitch.henkin.boundedFormulaChain' Flypitch.henkin.coconeOfLInfty
+  Flypitch.henkin.coconeOfTermLInfty Flypitch.henkin.coconeOfFormulaLInfty
+  Flypitch.henkin.coconeOfBoundedTermLInfty Flypitch.henkin.coconeOfBoundedFormulaLInfty
+  Flypitch.henkin.coconeOfBoundedFormulaPrimeLInfty Flypitch.henkin.termComparison
+  Flypitch.henkin.formulaComparison Flypitch.henkin.boundedTermComparison
+  Flypitch.henkin.boundedTermComparison' Flypitch.henkin.boundedFormulaComparison
+  Flypitch.henkin.boundedFormulaComparison' Flypitch.henkin.equivBoundedFormulaComparison
+  Flypitch.henkin.witProperty Flypitch.henkin.has_enough_constants
+  Flypitch.henkin.henkinTheoryStep Flypitch.henkin.henkinTheoryChain Flypitch.henkin.iota
+  Flypitch.henkin.TInfty Flypitch.henkin.henkinLanguage Flypitch.henkin.henkinLanguageOver
+  Flypitch.henkin.completeHenkinTheoryOver Flypitch.henkin.henkinization
+  Flypitch.henkin.witInfty
