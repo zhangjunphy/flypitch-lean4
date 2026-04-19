@@ -133,6 +133,7 @@ Every completed milestone must satisfy both checks:
 - `Flypitch/LanguageExtension.lean`
 - `Flypitch/Henkin.lean`
 - `Flypitch/BVTauto.lean`
+- `Flypitch/AlephOne.lean`
 - `Flypitch/Examples/Abel.lean`
 - `Flypitch/PSetOrdinal.lean`
 
@@ -144,35 +145,36 @@ suggested.
 Evidence-backed status:
 
 - The logic/Henkin chain now builds through `Flypitch/Henkin.lean`, including the completed
-  Henkinization bridge to a complete Henkin extension.
-- The upstream `completeness.lean` file is still **not** ported, and the supporting late-`fol`
-  term-model material used by upstream completeness (`term_model`, `nonempty_term_model`,
-  `completion_of_henkinization`, and the reduct-to-`T` satisfaction lemmas) is also still
-  absent from the Lean 4 tree.
-- On the forcing side, `Flypitch/PSetOrdinal.lean` is only an initial bridge layer rather than a
-  complete port of upstream `pSet_ordinal.lean`.
+  Henkinization bridge to a complete Henkin extension and upstream-style
+  `completion_of_henkinization*` wrappers.
+- The bounded-syntax layer now includes bounded term/formula realization together with bridge
+  lemmas back to the ordinary semantics (`realize_bounded_term_eq`,
+  `realize_bounded_formula_iff`, `realize_bounded_formula_iff_of_fst`) and closed-term top-variable
+  substitution helpers.
+- The completeness tail is now ported end-to-end. In addition to
+  `find_counterexample_of_henkin`, the term-model quotient scaffold, quotient-respecting
+  function/relation lifts, canonical-class bridge lemmas, bounded realization/substitution bridge,
+  and the complete-Henkin-model induction (`count_quantifiers_subst_formula`,
+  `term_model_ssatisfied_iff`, `term_model_ssatisfied`, `completeness'`), the file now also has
+  the final public wrappers:
+  `theory_induced_subset_henkinization`, `satisfiable_of_consistent`, and `completeness`.
+- The theory-side wrappers in `Flypitch/FOL/Theory.lean` are now in place too:
+  `Th`, `realize_sentence_Th`, `is_complete_Th`, `in_theory_iff_satisfied`, `L_empty`, `T_empty`,
+  and `T_equality`.
+- As a result, the old logic-side blocker around the reduct/model-existence bridge is no longer the
+  frontier. The main remaining repo-level blocker has shifted back to the forcing side.
 - `Flypitch/BVTauto.lean` is now present as the first fully ported forcing-root utility file.
-- `Flypitch/PSetOrdinal.lean` now contains the initial ordinal/cardinal bridge layer, the first
-  structural `PSet` well-foundedness/transitivity lemmas used to model ordinal-shaped pre-sets,
-  a first pass of function-graph infrastructure (`pair`, `prod`, `is_func`, `functions`,
-  injectivity/surjectivity predicates), the `functions x 2 ↪ powerset x` injection section
-  (`f2ip`, `mem_f2ip_iff`, `functions_to_2_eq`, `functions_2_injects_into_powerset`), the
-  follow-up closure lemmas around function congruence/extensionality and `injects_into`, a small
-  compatibility/helper layer (`is_func_iff`, `is_extensional_of_mem_functions`,
-  `set_of_indicator`, `powerset_sound`, `prod_sound`), an upstream-name compatibility layer
-  around weak function lifts (`function_lift_spec`, `function_lift'_spec`,
-  `mem_fun_of_function_lift'_graph`, `function_lift_graph_of_mem_fun_inj`, `surj_lift'`), a
-  quotient/membership compatibility layer (`equiv_of_eq`, `equiv_iff_eq`, `mem_iff`,
-  `not_mem_iff`, `mem_sound`, `mem_insert`, `mem_insert'`, `Set.subset_iff_all_mem`,
-  `empty_empty`, `Set.mk_unfold`), tiny namespace/name-alignment aliases
-  (`pair_mem.congr_left/right`, `function_lift'_graph_of_mem_fun_inj`), the set-level
-  function soundness bridge `is_func_sound`, a small ordinal/cardinal alias layer
-  (`mk_type_mk_eq`, `ordinal.mk_card`, `two_eq_succ_one`, `add_one_lt_add_one`, `one_lt_two`),
-  and a structural compatibility tranche (`mk_eq`, `eta`, `mk_zero_type`, `mk_zero_cast`,
-  `mk_zero_cast'`, `mk_zero_forall`, `mk_succ`, `succ_type_cast*`, `option_cast'`,
-  `succ_func_*`, `succ_type_forall/exists`, `option_succ_type_forall`), and the first finite-ordinal
-  subset/membership lemmas (`subset_of_le`,
-  `of_nat_mem_of_lt`, `of_nat_is_transitive`) needed by later forcing/set-theory files.
+- `Flypitch/PSetOrdinal.lean` now appears effectively complete relative to upstream
+  `pSet_ordinal.lean`: it includes the ordinal/cardinal bridge layer, the `PSet` structural
+  well-foundedness/transitivity lemmas, the function-graph infrastructure, the `functions x 2 ↪
+  powerset x` injection section, and several extra Lean 4 compatibility lemmas not present as
+  separate upstream theorems.
+- A new module `Flypitch/AlephOne.lean` now starts the upstream `aleph_one.lean` port. The first
+  pure-`pSet` tranche is in place: `regularity`, `aleph_one`, `aleph_one_Ord`,
+  `aleph_one_weak_Ord_spec`, `epsilon_trichotomy`, `compl`, `binary_inter`, `Ord_of_mem_Ord`,
+  and the first ordinal-comparison lemmas
+  (`Ord.lt_of_ne_and_le`, `Ord.le_or_le`, `Ord.trichotomy`, `Ord.lt_of_le_of_lt`,
+  `Ord.le_iff_lt_or_eq`).
 - `Flypitch/SetTheory.lean` now exists and contains the first delta-system tranche from upstream:
   the core definition plus the basic preimage/image/reindexing preservation lemmas, the first
   small `Set` helper tranche (`finite_of_finite_image_of_inj_on`, `countable_of_embedding`,
@@ -180,19 +182,13 @@ Evidence-backed status:
   (`countable_chain_condition`, `countable_chain_condition_of_nonempty`,
   `countable_chain_condition_of_countable`).
 
-So the real near-term blockers are split across **both** major branches:
+So the real near-term blockers are now concentrated on the forcing side:
 
-1. finish the remaining logic-side completeness prerequisites and port `completeness.lean`;
-2. finish the two forcing root files `pSet_ordinal.lean` and `set_theory.lean`, which unblock
-   the downstream forcing/topology stack.
+1. continue the remaining `aleph_one.lean` pSet/cardinal tail and then its downstream `bSet`
+   well-ordering section;
+2. continue `set_theory.lean`, which still only contains an opening delta-system/CCC tranche.
 
-The next Lean 4 tranche should therefore be chosen from these root blockers based on local
-traction rather than the older linear estimate. After the current `BVTauto` milestone, the two
-most direct large targets are:
+The next Lean 4 tranche should therefore come from:
 
-- `pSet_ordinal.lean`
+- `aleph_one.lean`
 - `set_theory.lean`
-
-while the main logic-side blocker remains:
-
-- `completeness.lean` together with its missing term-model support.

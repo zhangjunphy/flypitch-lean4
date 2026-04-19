@@ -1,5 +1,6 @@
 import Flypitch.Colimit
 import Flypitch.Compactness
+import Flypitch.AlephOne
 import Flypitch.Compat.Core
 import Flypitch.Completion
 import Flypitch.BVTauto
