@@ -278,6 +278,56 @@ noncomputable def exE {Γ : Set (formula L)} {f₁ f₂ : formula L} (h₁ : Γ 
   rw [Set.image_insert_eq]
   exact prf.impE _ axm2 (weakening2 h₂)
 
+/-- Symmetry of equality. -/
+noncomputable def symm {Γ : Set (formula L)} {s t : term L} (h : Γ ⊢ s ≃ t) : Γ ⊢ t ≃ s := by
+  apply subst (f₁ := (&0 : term L) ≃ (s ↑ 1)) h
+  · simpa [subst_formula_equal, lift_formula1, lift_formula] using (prf.ref Γ s)
+  · simpa [subst_formula_equal, lift_formula1, lift_formula]
+
+/-- Transitivity of equality. -/
+noncomputable def trans {Γ : Set (formula L)} {t₁ t₂ t₃ : term L}
+    (h₁₂ : Γ ⊢ t₁ ≃ t₂) (h₂₃ : Γ ⊢ t₂ ≃ t₃) : Γ ⊢ t₁ ≃ t₃ := by
+  apply subst (f₁ := (t₁ ↑ 1) ≃ (&0 : term L)) h₂₃
+  · simpa [subst_formula_equal, lift_formula1, lift_formula] using h₁₂
+  · simpa [subst_formula_equal, lift_formula1, lift_formula]
+
+/-- Equality is respected by substituting equal terms into a fixed term context. -/
+noncomputable def congr {Γ : Set (formula L)} {t₁ t₂ : term L} (s : term L)
+    (h₁₂ : Γ ⊢ t₁ ≃ t₂) : Γ ⊢ subst_term s t₁ 0 ≃ subst_term s t₂ 0 := by
+  apply subst (f₁ := (((subst_term s t₁ 0 : term L) ↑ 1) ≃ s)) h₁₂
+  · simpa [subst_formula_equal, lift_term1_subst_term] using
+      (prf.ref Γ (subst_term s t₁ 0))
+  · simpa [subst_formula_equal, lift_term1_subst_term]
+
+/-- Compose two implications. -/
+noncomputable def imp_trans {Γ : Set (formula L)} {f₁ f₂ f₃ : formula L}
+    (h₁₂ : Γ ⊢ f₁ ⟹ f₂) (h₂₃ : Γ ⊢ f₂ ⟹ f₃) : Γ ⊢ f₁ ⟹ f₃ := by
+  apply prf.impI
+  apply prf.impE _ (weakening1 h₂₃)
+  exact prf.impE _ (weakening1 h₁₂) axm1
+
+/-- Reflexivity of biconditional. -/
+noncomputable def biimp_refl (Γ : Set (formula L)) (f : formula L) : Γ ⊢ biimp f f := by
+  apply biimpI <;> exact axm1
+
+/-- Transitivity of biconditional. -/
+noncomputable def biimp_trans {Γ : Set (formula L)} {f₁ f₂ f₃ : formula L}
+    (h₁₂ : Γ ⊢ biimp f₁ f₂) (h₂₃ : Γ ⊢ biimp f₂ f₃) : Γ ⊢ biimp f₁ f₃ := by
+  apply andI
+  · exact imp_trans (andE1 _ h₁₂) (andE1 _ h₂₃)
+  · exact imp_trans (andE2 _ h₂₃) (andE2 _ h₁₂)
+
+/-- A provable biconditional yields equivalent truncated derivability. -/
+theorem iff_of_biimp {Γ : Set (formula L)} {f₁ f₂ : formula L}
+    (h : Γ ⊢ biimp f₁ f₂) : (Γ ⊢' f₁) ↔ (Γ ⊢' f₂) := by
+  constructor
+  · intro hf
+    rcases hf with ⟨hf⟩
+    exact ⟨prf.impE _ (prf.impI (biimpE1 h)) hf⟩
+  · intro hf
+    rcases hf with ⟨hf⟩
+    exact ⟨prf.impE _ (prf.impI (biimpE2 h)) hf⟩
+
 /-- Lift every formula appearing in a derivation by the same shift. -/
 noncomputable def prf_lift {Γ : Set (formula L)} {f : formula L} (n m : Nat) (h : Γ ⊢ f) :
     Set.image (fun g : formula L => lift_formula_at g n m) Γ ⊢ lift_formula_at f n m := by

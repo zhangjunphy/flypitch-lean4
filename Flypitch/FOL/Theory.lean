@@ -225,6 +225,61 @@ theorem subst_sentence_irrel (f : sentence L) (s : term L) :
     subst_formula (f : formula L) s 0 = f := by
   simpa using bounded_formula_at_subst_irrel (f := (f : formula L)) (n := 0) f.2 s
 
+/-- Realization of a bounded term depends only on the valuation below its bound. -/
+theorem bounded_term_at_realize_congr {M : Structure L} {v v' : Nat → M} :
+    {l : Nat} → (t : preterm L l) → {n : Nat} →
+      bounded_term_at t n → (∀ k, k < n → v k = v' k) → (xs : dvector M l) →
+        realize_term v t xs = realize_term v' t xs
+  | _, .var k, _, hk, hv, _ => hv k hk
+  | _, .func _, _, _, _, _ => rfl
+  | _, .app t₁ t₂, _, h, hv, xs => by
+      have ht₂ : realize_term v t₂ dvector.nil = realize_term v' t₂ dvector.nil :=
+        bounded_term_at_realize_congr t₂ h.2 hv dvector.nil
+      simpa [realize_term, ht₂] using
+        (bounded_term_at_realize_congr t₁ h.1 hv (dvector.cons (realize_term v' t₂ dvector.nil) xs))
+
+/-- Realization of a bounded formula depends only on the valuation below its bound. -/
+theorem bounded_formula_at_realize_congr {M : Structure L} {v v' : Nat → M} :
+    {l : Nat} → (f : preformula L l) → {n : Nat} →
+      bounded_formula_at f n → (∀ k, k < n → v k = v' k) → (xs : dvector M l) →
+        realize_formula v f xs ↔ realize_formula v' f xs
+  | _, .falsum, _, _, _, _ => Iff.rfl
+  | _, .equal t₁ t₂, _, h, hv, xs => by
+      simp [realize_formula,
+        bounded_term_at_realize_congr (v := v) (v' := v') t₁ h.1 hv xs,
+        bounded_term_at_realize_congr (v := v) (v' := v') t₂ h.2 hv xs]
+  | _, .rel _, _, _, _, _ => Iff.rfl
+  | _, .apprel f t, _, h, hv, xs => by
+      have ht : realize_term v t dvector.nil = realize_term v' t dvector.nil :=
+        bounded_term_at_realize_congr (v := v) (v' := v') t h.2 hv dvector.nil
+      simpa [realize_formula, ht] using
+        (bounded_formula_at_realize_congr (v := v) (v' := v') f h.1 hv
+          (dvector.cons (realize_term v' t dvector.nil) xs))
+  | _, .imp f₁ f₂, _, h, hv, xs => by
+      constructor <;> intro hf h₁
+      · exact (bounded_formula_at_realize_congr (v := v) (v' := v') f₂ h.2 hv xs).mp
+          (hf ((bounded_formula_at_realize_congr (v := v) (v' := v') f₁ h.1 hv xs).mpr h₁))
+      · exact (bounded_formula_at_realize_congr (v := v) (v' := v') f₂ h.2 hv xs).mpr
+          (hf ((bounded_formula_at_realize_congr (v := v) (v' := v') f₁ h.1 hv xs).mp h₁))
+  | _, .all f, _, h, hv, xs => by
+      constructor
+      · intro hf x
+        exact (bounded_formula_at_realize_congr (v := v[x // 0]) (v' := v'[x // 0]) f h
+          (fun k hk => by
+            cases k with
+            | zero => rfl
+            | succ k =>
+                simpa [subst_realize] using hv k (Nat.lt_of_succ_lt_succ hk))
+          xs).mp (hf x)
+      · intro hf x
+        exact (bounded_formula_at_realize_congr (v := v[x // 0]) (v' := v'[x // 0]) f h
+          (fun k hk => by
+            cases k with
+            | zero => rfl
+            | succ k =>
+                simpa [subst_realize] using hv k (Nat.lt_of_succ_lt_succ hk))
+          xs).mpr (hf x)
+
 /-- A theory is a set of closed formulas. -/
 structure Theory (L : Language.{u}) : Type (u + 1) where
   carrier : Set (sentence L)
@@ -422,9 +477,21 @@ theorem sprovable.elim {P : Prop} {T : Theory L} {f : sentence L} (ih : T ⊢ f 
 abbrev realize_sentence (M : Structure L) (f : sentence L) : Prop :=
   satisfied_in M (f : formula L)
 
+/-- The complete theory of a structure: all sentences true in it. -/
+def Th (M : Structure L) : Theory L :=
+  ⟨{f | realize_sentence M f}⟩
+
+@[simp] lemma in_theory_iff_satisfied {M : Structure L} {f : sentence L} :
+    f ∈ Th M ↔ realize_sentence M f :=
+  Iff.rfl
+
 /-- Every sentence in `T` is satisfied in `M`. -/
 abbrev all_realize_sentence (M : Structure L) (T : Theory L) : Prop :=
   ∀ ⦃f : sentence L⦄, f ∈ T → realize_sentence M f
+
+lemma realize_sentence_Th (M : Structure L) : all_realize_sentence M (Th M) := by
+  intro f hf
+  exact hf
 
 /-- Satisfaction is monotone along inclusion of theories. -/
 lemma all_realize_sentence_of_subset {M : Structure L} {T₁ T₂ : Theory L} (h : all_realize_sentence M T₂)
@@ -512,6 +579,40 @@ lemma consis_not_of_not_provable {T : Theory L} {f : sentence L} (h₁ : ¬ T �
 /-- A complete theory is consistent and decides every sentence. -/
 def is_complete (T : Theory L) : Prop :=
   is_consistent T ∧ ∀ f : sentence L, f ∈ T ∨ ∼f ∈ T
+
+lemma is_complete_Th (M : Structure L) (hM : Nonempty M) : is_complete (Th M) := by
+  refine ⟨?_, ?_⟩
+  · intro hbot
+    rcases hM with ⟨x⟩
+    rcases hbot with ⟨hbot⟩
+    have hFalse := formula_soundness hbot M (fun _ => x) ?_
+    · simpa [realize_formula] using hFalse
+    · intro g hg
+      rcases hg with ⟨f, hf, rfl⟩
+      exact hf (fun _ => x)
+  · intro f
+    let v : Nat → M := fun _ => Classical.choice hM
+    by_cases hf : realize_formula v (f : formula L) dvector.nil
+    · left
+      intro v'
+      exact (bounded_formula_at_realize_congr (v := v) (v' := v') (f := (f : formula L)) f.2
+        (fun k hk => False.elim (Nat.not_lt_zero _ hk)) dvector.nil).mp hf
+    · right
+      intro v' hf'
+      apply hf
+      exact (bounded_formula_at_realize_congr (v := v') (v' := v) (f := (f : formula L)) f.2
+        (fun k hk => False.elim (Nat.not_lt_zero _ hk)) dvector.nil).mp hf'
+
+/-- The empty first-order language. -/
+def L_empty : Language :=
+  ⟨fun _ => PEmpty, fun _ => PEmpty⟩
+
+/-- The empty theory over a language. -/
+def T_empty (L : Language.{u}) : Theory L :=
+  ∅
+
+@[reducible] def T_equality : Theory L_empty :=
+  T_empty L_empty
 
 /-- In a complete theory, every provable sentence is already an axiom. -/
 theorem mem_of_sprf {T : Theory L} (h : is_complete T) {f : sentence L} (hf : T ⊢ f) : f ∈ T := by

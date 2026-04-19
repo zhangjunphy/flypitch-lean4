@@ -244,6 +244,174 @@ theorem bd_ex_fst {n : Nat} (f : bounded_formula L (n + 1)) :
     (bd_ex f).fst = ex f.fst :=
   rfl
 
+/-- Evaluate a bounded term using only the bounded part of a valuation. -/
+def realize_bounded_term {M : Structure L} {n : Nat} (v : dvector M.carrier n) :
+    {l : Nat} → bounded_preterm L n l → dvector M.carrier l → M.carrier
+  | _, ⟨preterm.var k, hk⟩, _ => v.nth k hk
+  | _, ⟨preterm.func f, _⟩, xs => M.fun_map f xs
+  | _, ⟨preterm.app t₁ t₂, h⟩, xs =>
+      realize_bounded_term v ⟨t₁, h.1⟩
+        (dvector.cons (realize_bounded_term v ⟨t₂, h.2⟩ dvector.nil) xs)
+termination_by l t xs => sizeOf t.1
+decreasing_by
+  all_goals
+    try simp_wf
+    try omega
+
+/-- Evaluate a closed term. -/
+@[reducible] def realize_closed_term (M : Structure L) (t : closed_term L) : M.carrier :=
+  realize_bounded_term (dvector.nil : dvector M.carrier 0) t dvector.nil
+
+/-- A bounded valuation agrees with any total valuation that matches it on the bounded range. -/
+theorem realize_bounded_term_eq {M : Structure L} {n : Nat}
+    {v₁ : dvector M.carrier n} {v₂ : Nat → M.carrier}
+    (hv : ∀ k (hk : k < n), v₁.nth k hk = v₂ k) :
+    {l : Nat} → (t : bounded_preterm L n l) → (xs : dvector M.carrier l) →
+      realize_bounded_term v₁ t xs = realize_term v₂ t.fst xs
+  | _, ⟨preterm.var k, hk⟩, _ => by simp [realize_bounded_term, realize_term, hv k hk]
+  | _, ⟨preterm.func f, _⟩, _ => by simp [realize_bounded_term, realize_term]
+  | _, ⟨preterm.app t₁ t₂, h⟩, xs => by
+      have ht₂ :
+          realize_bounded_term v₁ ⟨t₂, h.2⟩ dvector.nil = realize_term v₂ t₂ dvector.nil :=
+        realize_bounded_term_eq hv ⟨t₂, h.2⟩ dvector.nil
+      simpa [realize_bounded_term, realize_term, ht₂] using
+        (realize_bounded_term_eq hv ⟨t₁, h.1⟩
+          (dvector.cons (realize_term v₂ t₂ dvector.nil) xs))
+termination_by l t xs => sizeOf t.1
+decreasing_by
+  all_goals
+    try simp_wf
+    try omega
+
+/-- Evaluate a bounded formula using only the bounded part of a valuation. -/
+def realize_bounded_formula {M : Structure L} :
+    {n l : Nat} → dvector M.carrier n → bounded_preformula L n l → dvector M.carrier l → Prop
+  | _, _, _, ⟨preformula.falsum, _⟩, _ => False
+  | _, _, v, ⟨preformula.equal t₁ t₂, h⟩, xs =>
+      realize_bounded_term v ⟨t₁, h.1⟩ xs = realize_bounded_term v ⟨t₂, h.2⟩ xs
+  | _, _, _, ⟨preformula.rel R, _⟩, xs => M.rel_map R xs
+  | _, _, v, ⟨preformula.apprel f t, h⟩, xs =>
+      realize_bounded_formula v ⟨f, h.1⟩
+        (dvector.cons (realize_bounded_term v ⟨t, h.2⟩ dvector.nil) xs)
+  | _, _, v, ⟨preformula.imp f₁ f₂, h⟩, xs =>
+      realize_bounded_formula v ⟨f₁, h.1⟩ xs → realize_bounded_formula v ⟨f₂, h.2⟩ xs
+  | _, _, v, ⟨preformula.all f, h⟩, xs =>
+      ∀ x : M.carrier, realize_bounded_formula (dvector.cons x v) ⟨f, h⟩ xs
+termination_by n l v f xs => sizeOf f.1
+decreasing_by
+  all_goals
+    try simp_wf
+    try omega
+
+/-- Bounded formula realization agrees with ordinary realization under matching valuations. -/
+  theorem realize_bounded_formula_iff {M : Structure L} {n : Nat}
+    {v₁ : dvector M.carrier n} {v₂ : Nat → M.carrier}
+    (hv : ∀ k (hk : k < n), v₁.nth k hk = v₂ k) :
+    {l : Nat} → (f : bounded_preformula L n l) → (xs : dvector M.carrier l) →
+      realize_bounded_formula v₁ f xs ↔ realize_formula v₂ f.fst xs
+  | _, ⟨preformula.falsum, _⟩, _ => by simp [realize_bounded_formula, realize_formula]
+  | _, ⟨preformula.equal t₁ t₂, h⟩, xs => by
+      simp [realize_bounded_formula, realize_formula,
+        realize_bounded_term_eq (v₁ := v₁) (v₂ := v₂) (hv := hv)
+          (t := ⟨t₁, h.1⟩) (xs := xs),
+        realize_bounded_term_eq (v₁ := v₁) (v₂ := v₂) (hv := hv)
+          (t := ⟨t₂, h.2⟩) (xs := xs)]
+  | _, ⟨preformula.rel R, _⟩, _ => by simp [realize_bounded_formula, realize_formula]
+  | _, ⟨preformula.apprel f t, h⟩, xs => by
+      have ht :
+          realize_bounded_term v₁ ⟨t, h.2⟩ dvector.nil = realize_term v₂ t dvector.nil :=
+        realize_bounded_term_eq (v₁ := v₁) (v₂ := v₂) (hv := hv)
+          (t := ⟨t, h.2⟩) (xs := dvector.nil)
+      simpa [realize_bounded_formula, realize_formula, ht] using
+        (realize_bounded_formula_iff (v₁ := v₁) (v₂ := v₂) (hv := hv)
+          (f := ⟨f, h.1⟩) (xs := dvector.cons (realize_term v₂ t dvector.nil) xs))
+  | _, ⟨preformula.imp f₁ f₂, h⟩, xs => by
+      simpa [realize_bounded_formula, realize_formula] using
+        (show
+          (realize_bounded_formula v₁ ⟨f₁, h.1⟩ xs → realize_bounded_formula v₁ ⟨f₂, h.2⟩ xs) ↔
+            (realize_formula v₂ f₁ xs → realize_formula v₂ f₂ xs) from
+          Iff.intro
+            (fun hf h₁ =>
+              (realize_bounded_formula_iff (v₁ := v₁) (v₂ := v₂) (hv := hv)
+                (f := ⟨f₂, h.2⟩) (xs := xs)).mp
+                (hf ((realize_bounded_formula_iff (v₁ := v₁) (v₂ := v₂) (hv := hv)
+                  (f := ⟨f₁, h.1⟩) (xs := xs)).mpr h₁)))
+            (fun hf h₁ =>
+              (realize_bounded_formula_iff (v₁ := v₁) (v₂ := v₂) (hv := hv)
+                (f := ⟨f₂, h.2⟩) (xs := xs)).mpr
+                (hf ((realize_bounded_formula_iff (v₁ := v₁) (v₂ := v₂) (hv := hv)
+                  (f := ⟨f₁, h.1⟩) (xs := xs)).mp h₁))))
+  | _, ⟨preformula.all f, h⟩, xs => by
+      simpa [realize_bounded_formula, realize_formula] using
+        (show
+          (∀ x : M.carrier, realize_bounded_formula (dvector.cons x v₁) ⟨f, h⟩ xs) ↔
+            (∀ x : M.carrier, realize_formula (v₂[x // 0]) f xs) from
+          Iff.intro
+            (fun hf x =>
+              (realize_bounded_formula_iff
+                (v₁ := dvector.cons x v₁) (v₂ := v₂[x // 0])
+                (hv := by
+                  intro k hk
+                  cases k with
+                  | zero => rfl
+                  | succ k =>
+                      simpa using hv k (Nat.lt_of_succ_lt_succ hk))
+                (f := ⟨f, h⟩) (xs := xs)).mp (hf x))
+            (fun hf x =>
+              (realize_bounded_formula_iff
+                (v₁ := dvector.cons x v₁) (v₂ := v₂[x // 0])
+                (hv := by
+                  intro k hk
+                  cases k with
+                  | zero => rfl
+                  | succ k =>
+                      simpa using hv k (Nat.lt_of_succ_lt_succ hk))
+                (f := ⟨f, h⟩) (xs := xs)).mpr (hf x)))
+termination_by l f xs => sizeOf f.1
+decreasing_by
+  all_goals
+    try simp_wf
+    try omega
+
+/-- Transport a semantic equivalence on underlying formulas back to bounded formulas. -/
+theorem realize_bounded_formula_iff_of_fst {M : Structure L} {n : Nat}
+    {v₁ w₁ : dvector M.carrier n} {v₂ w₂ : Nat → M.carrier}
+    (hv₁ : ∀ k (hk : k < n), v₁.nth k hk = v₂ k)
+    (hw₁ : ∀ k (hk : k < n), w₁.nth k hk = w₂ k) :
+    {l₁ l₂ : Nat} → (f₁ : bounded_preformula L n l₁) → (f₂ : bounded_preformula L n l₂) →
+      (xs₁ : dvector M.carrier l₁) → (xs₂ : dvector M.carrier l₂) →
+      (realize_formula v₂ f₁.fst xs₁ ↔ realize_formula w₂ f₂.fst xs₂) →
+        (realize_bounded_formula v₁ f₁ xs₁ ↔ realize_bounded_formula w₁ f₂ xs₂)
+  | _, _, f₁, f₂, xs₁, xs₂, h => by
+      simpa [realize_bounded_formula_iff (v₁ := v₁) (v₂ := v₂) (hv := hv₁) (f := f₁) (xs := xs₁),
+        realize_bounded_formula_iff (v₁ := w₁) (v₂ := w₂) (hv := hw₁) (f := f₂) (xs := xs₂)] using h
+
+/-- Substitution of a closed term at the top bounded variable. -/
+@[simp] def substmax_bounded_term {n l : Nat} (t : bounded_preterm L (n + 1) l)
+    (s : closed_term L) : bounded_preterm L n l :=
+  ⟨subst_term t.fst s.fst n,
+    bounded_term_at_subst_closed (t := t.fst) (n := n) (s := s.fst) t.2 s.2⟩
+
+@[simp] theorem substmax_bounded_term_fst {n l : Nat} (t : bounded_preterm L (n + 1) l)
+    (s : closed_term L) : (substmax_bounded_term t s).fst = subst_term t.fst s.fst n :=
+  rfl
+
+/-- Substitution of a closed term at the top bounded variable in formulas. -/
+@[simp] def substmax_bounded_formula {n l : Nat} (f : bounded_preformula L (n + 1) l)
+    (s : closed_term L) : bounded_preformula L n l :=
+  ⟨subst_formula f.fst s.fst n,
+    bounded_formula_at_subst_closed (f := f.fst) (n := n) (s := s.fst) f.2 s.2⟩
+
+@[simp] theorem substmax_bounded_formula_fst {n l : Nat} (f : bounded_preformula L (n + 1) l)
+    (s : closed_term L) :
+    (substmax_bounded_formula f s).fst = subst_formula f.fst s.fst n :=
+  rfl
+
+/-- Specialization to the unique free variable of a `1`-bounded formula. -/
+theorem substmax_eq_subst0_formula {l : Nat} (f : bounded_preformula L 1 l) (t : closed_term L) :
+    (substmax_bounded_formula f t).fst = subst_formula f.fst t.fst 0 := by
+  rfl
+
 end fol
 end Flypitch
 
