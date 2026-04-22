@@ -384,6 +384,88 @@ theorem mem_pi_basis_iff {o : Set (∀ x, β x)} :
   · rintro ⟨i, s, hsOpen, hsNe, rfl⟩
     exact mem_pi_basis_of_pi (β := β) hsOpen hsNe
 
+theorem pi_basis_eq :
+    pi_basis β =
+      ({g | ∃ s : ∀ x, Set (β x), ∃ i : Finset α, (∀ x ∈ i, IsOpen (s x)) ∧
+        g = Set.pi (i : Set α) s} \ {∅}) := by
+  ext g
+  constructor
+  · intro hg
+    rcases (mem_pi_basis_iff (β := β)).1 hg with ⟨i, s, hsOpen, hsNe, rfl⟩
+    refine ⟨⟨s, i, hsOpen, rfl⟩, ?_⟩
+    exact hsNe
+  · rintro ⟨⟨s, i, hsOpen, rfl⟩, hsNe⟩
+    exact mem_pi_basis_of_pi (β := β) hsOpen hsNe
+
+/-- The coordinates that matter for deciding membership in a set of dependent functions. -/
+def support (o : Set (∀ x, β x)) : Set α :=
+  ⋂₀ {s : Set α | ∀ ⦃f g : ∀ x, β x⦄, Set.eqOn' f g s → f ∈ o → g ∈ o}
+
+theorem support_pi {i : Set α} {s : ∀ x, Set (β x)} (h : (Set.pi i s).Nonempty) :
+    support (β := β) (Set.pi i s) = {x | x ∈ i ∧ s x ≠ Set.univ} := by
+  classical
+  apply Set.Subset.antisymm
+  · apply Set.sInter_subset_of_mem
+    intro f g hfg hf x hxi
+    by_cases hsx : s x = Set.univ
+    · simpa [hsx]
+    · have hx' : x ∈ {x | x ∈ i ∧ s x ≠ Set.univ} := ⟨hxi, hsx⟩
+      simpa [hfg hx'] using hf x hxi
+  · intro x hx
+    apply Set.mem_sInter.2
+    intro t ht
+    by_contra hxt
+    rcases h with ⟨f, hf⟩
+    have hNotUniv : s x ≠ Set.univ := hx.2
+    have hExists : ∃ z₂, z₂ ∉ s x := by
+      by_contra hNo
+      apply hNotUniv
+      ext z
+      constructor
+      · intro hz
+        trivial
+      · intro _
+        by_contra hzNot
+        exact hNo ⟨z, hzNot⟩
+    rcases hExists with ⟨z₂, hz₂⟩
+    let g : ∀ x, β x := Function.update f x z₂
+    have hEqOn : Set.eqOn' f g t := by
+      intro y hy
+      by_cases hyx : y = x
+      · exact False.elim (hxt (hyx ▸ hy))
+      · simp [g, Function.update_of_ne hyx]
+    have hg : g ∈ Set.pi i s := ht hEqOn hf
+    have : z₂ ∈ s x := by
+      simpa [g, Function.update_self] using hg x hx.1
+    exact hz₂ this
+
+theorem support_elim {o : Set (∀ x, β x)} {f g : ∀ x, β x} (ho : o ∈ pi_basis β)
+    (hEq : Set.eqOn' f g (support (β := β) o)) (hf : f ∈ o) : g ∈ o := by
+  rcases (mem_pi_basis_iff (β := β)).1 ho with ⟨i, s, _, hsNe, rfl⟩
+  have hsupp : support (β := β) (Set.pi (i : Set α) s) = {x | x ∈ (i : Set α) ∧ s x ≠ Set.univ} :=
+    support_pi (β := β) (i := (i : Set α)) (s := s) (Set.nonempty_iff_ne_empty.mpr hsNe)
+  rw [hsupp] at hEq
+  intro x hx
+  by_cases hsx : s x = Set.univ
+  · simpa [hsx]
+  · have hxSupp : x ∈ {x | x ∈ (i : Set α) ∧ s x ≠ Set.univ} := ⟨hx, hsx⟩
+    simpa [hEq hxSupp] using hf x hx
+
+theorem finite_support_of_pi_subbasis {o : Set (∀ x, β x)} (h : o ∈ pi_subbasis β) :
+    (support (β := β) o).Finite := by
+  rcases (mem_pi_subbasis_iff (β := β)).1 h with ⟨i, o, rfl⟩
+  apply Set.Finite.subset (Set.finite_singleton i)
+  apply Set.sInter_subset_of_mem
+  intro f g hfg hf
+  have hgi : f i = g i := by simpa [Set.eqOn'] using hfg (by simp : i ∈ ({i} : Set α))
+  simpa [standard_open, hgi] using hf
+
+theorem finite_support_of_pi_basis {o : Set (∀ x, β x)} (h : o ∈ pi_basis β) :
+    (support (β := β) o).Finite := by
+  rcases (mem_pi_basis_iff (β := β)).1 h with ⟨i, s, _, hsNe, rfl⟩
+  rw [support_pi (β := β) (i := (i : Set α)) (s := s) (Set.nonempty_iff_ne_empty.mpr hsNe)]
+  exact Set.Finite.subset i.finite_toSet (by intro x hx; exact hx.1)
+
 /-- The coordinate support of a cylinder family: the coordinates where the fiber is not `univ`. -/
 def pi_set_support (s : ∀ x, Set (β x)) : Set α :=
   {x | s x ≠ Set.univ}
@@ -518,6 +600,71 @@ theorem mem_pi_basis_of_mem_pi_basis_from {T : ∀ x, Set (Set (β x))}
     o ∈ pi_basis β := by
   rcases ho with ⟨i, hi⟩
   exact mem_pi_basis_of_mem_pi_basis_from_finset (β := β) hOpen hi hne
+
+theorem isOpen_of_mem_pi_basis_from {T : ∀ x, Set (Set (β x))}
+    (hOpen : ∀ x, T x ⊆ {s : Set (β x) | IsOpen s})
+    {o : Set (∀ x, β x)} (ho : o ∈ pi_basis_from (β := β) T) : IsOpen o := by
+  rcases (mem_pi_basis_from_iff (β := β)).1 ho with ⟨i, s, hsT, _, rfl⟩
+  exact isOpen_set_pi i.finite_toSet fun x hx => hOpen x (hsT x hx)
+
+theorem isTopologicalBasis_pi_basis_from {T : ∀ x, Set (Set (β x))}
+    (hBasis : ∀ x, IsTopologicalBasis (T x)) : IsTopologicalBasis (pi_basis_from (β := β) T) := by
+  classical
+  apply isTopologicalBasis_of_isOpen_of_nhds
+  · intro o ho
+    exact isOpen_of_mem_pi_basis_from (β := β) (fun x s hs => (hBasis x).isOpen hs) ho
+  · intro f o hfo ho
+    rcases isOpen_pi_iff.1 ho f hfo with ⟨i, s, hs, hsub⟩
+    choose t htT hft htsub using
+      fun x hx => (hBasis x).isOpen_iff.1 ((hs x hx).1) (f x) ((hs x hx).2)
+    let u : ∀ x, Set (β x) := fun x =>
+      if hx : x ∈ i then t x hx else Set.univ
+    have huT : ∀ x ∈ i, u x ∈ T x := by
+      intro x hx
+      simpa [u, hx] using htT x hx
+    have huUniv : ∀ x ∉ i, u x = Set.univ := by
+      intro x hx
+      simp [u, hx]
+    have hfU : f ∈ Set.pi (i : Set α) u := by
+      intro x hx
+      dsimp [u]
+      split_ifs with h
+      · simpa using hft x hx
+      · contradiction
+    have huSub : Set.pi (i : Set α) u ⊆ o := by
+      intro g hg
+      exact hsub fun x hx => (htsub x hx) (by
+        have hgx := hg x hx
+        dsimp [u] at hgx
+        split_ifs at hgx with h
+        · simpa using hgx
+        · contradiction)
+    refine ⟨Set.pi (i : Set α) u, ?_, hfU, huSub⟩
+    exact (mem_pi_basis_from_iff (β := β)).2 ⟨i, u, huT, huUniv, rfl⟩
+
+theorem countable_pi_basis_from_countableBasis [Countable α]
+    [∀ x, SecondCountableTopology (β x)] :
+    (pi_basis_from (β := β) fun x => countableBasis (β x)).Countable := by
+  exact countable_pi_basis_from (β := β) (fun x => countableBasis (β x))
+    (fun x => countable_countableBasis (β x))
+
+theorem isTopologicalBasis_pi_basis_from_countableBasis
+    [∀ x, SecondCountableTopology (β x)] :
+    IsTopologicalBasis (pi_basis_from (β := β) fun x => countableBasis (β x)) := by
+  exact isTopologicalBasis_pi_basis_from (β := β)
+    (fun x => isBasis_countableBasis (β x))
+
+theorem secondCountableTopology_pi_of_countable [Countable α]
+    [∀ x, SecondCountableTopology (β x)] :
+    SecondCountableTopology (∀ x, β x) :=
+  (isTopologicalBasis_pi_basis_from_countableBasis (β := β)).secondCountableTopology
+    (countable_pi_basis_from_countableBasis (β := β))
+
+theorem countable_chain_condition_pi_of_countable [Countable α]
+    [∀ x, SecondCountableTopology (β x)] :
+    countable_chain_condition (∀ x, β x) := by
+  letI : SecondCountableTopology (∀ x, β x) := secondCountableTopology_pi_of_countable (β := β)
+  exact countable_chain_condition_of_separable_space
 
 theorem isOpen_of_mem_pi_basis {o : Set (∀ x, β x)} (ho : o ∈ pi_basis β) : IsOpen o := by
   rcases ho with ⟨s, hs, rfl⟩
