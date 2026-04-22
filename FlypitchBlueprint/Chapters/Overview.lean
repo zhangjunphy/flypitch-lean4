@@ -9,40 +9,65 @@ open Informal
 #doc (Manual) "Overview" =>
 
 The long-term goal of Flypitch is a formal proof that the continuum hypothesis
-is independent of ZFC. The original project reaches that endpoint by combining
-three strands:
+is independent of ZFC. Mathematically, the original project reaches this goal
+by combining three ingredients:
 
 - a first-order logic and completeness development
-- forcing and Boolean-valued models
-- set-theoretic infrastructure connecting those two sides
+- the forcing and Boolean-valued-model machinery
+- the set-theoretic infrastructure connecting these two sides
 
-The current Lean 4 port has not reached that full endpoint yet. What is
+The present Lean 4 repository does not yet cover this entire story. What is
 already formalized is the logic-side development leading from first-order
-syntax through complete Henkin extensions of consistent theories.
+syntax to complete Henkin extensions of consistent theories. This blueprint is
+therefore written as an account of the mathematics that is currently available,
+rather than as a premature sketch of the final independence proof.
 
-# Migration Status
+# What Has Been Built
 
-This chapter is the first `verso-blueprint` placeholder. It establishes the
-document structure and keeps the migration boundary explicit:
+The existing Lean 4 development already contains a coherent model-theoretic
+thread. Starting from the syntax and semantics of first-order logic, it proves
+soundness, establishes compactness in the proof-theoretic form needed for later
+consistency arguments, constructs maximal consistent extensions, and develops
+the language-extension machinery required for Henkinization. The endpoint of
+the present port is a complete Henkin extension of any consistent theory.
 
-- the current published blueprint source still lives in `blueprint/src/`
-- the new Verso blueprint is being ported in parallel under
-  `FlypitchBlueprint/`
-- chapter content will move over incrementally, with labels and Lean links
-  added as each chapter is converted
+This means that the current repository already supports a substantial part of
+the standard completeness argument. What is still missing is the later
+packaging of completeness itself and, beyond that, the forcing and set-theoretic
+constructions that are needed for the independence result.
 
-# Reading Order
+# How To Read The Blueprint
 
-The intended mathematical reading order matches the current LaTeX blueprint:
+This blueprint is organized as a mathematical progression.
 
-1. first-order logic core
-2. compactness and completion
-3. colimits and language extensions
-4. Henkinization
-5. current status and next frontier
+- the next chapter develops first-order languages, syntax, derivability,
+  semantics, and theories
+- the compactness and completion chapter explains how consistency can be
+  reduced to finite fragments and how consistent theories are enlarged to
+  complete ones
+- the colimits and language extensions chapter introduces the language maps,
+  reducts, colimits, and reflection arguments needed to compare syntax across
+  enlarging languages
+- the Henkinization chapter uses these ingredients to build the Henkin
+  language, the limit theory, and finally a complete Henkin extension
+- the final status chapter records the current boundary of the Lean 4 port
 
-# Formalization Boundary
+The intended reading is therefore not "which file was written first", but
+rather "which mathematical idea depends on which earlier one".
 
-The next serious gap after the current logic-side port is not elementary
-first-order logic. It is the remaining packaging around completeness, followed
-by the forcing-side branch beginning around `Flypitch/PSetOrdinal.lean`.
+# The Current Frontier
+
+The main point of this blueprint is that the frontier of the Lean 4 port no
+longer lies in the elementary first-order material. The logic-side development
+has already progressed through the Henkin construction. The next serious gap is
+after this stage: first the remaining completeness-side packaging, and then the
+forcing branch beginning with the still-unported `Flypitch/PSetOrdinal.lean`
+development.
+
+# Formalization Note
+
+The source files behind this blueprint include the first-order logic modules,
+the compactness and completion files, the colimit and language-extension files,
+and the Henkin file. Their role in the present document is supportive: the
+chapters below describe the mathematical constructions first, and only then
+indicate where those constructions are realized in Lean.
