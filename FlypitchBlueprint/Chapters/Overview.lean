@@ -20,7 +20,7 @@ The current Lean 4 port has not reached that full endpoint yet. What is
 already formalized is the logic-side development leading from first-order
 syntax through complete Henkin extensions of consistent theories.
 
-## Migration Status
+# Migration Status
 
 This chapter is the first `verso-blueprint` placeholder. It establishes the
 document structure and keeps the migration boundary explicit:
@@ -31,7 +31,7 @@ document structure and keeps the migration boundary explicit:
 - chapter content will move over incrementally, with labels and Lean links
   added as each chapter is converted
 
-## Reading Order
+# Reading Order
 
 The intended mathematical reading order matches the current LaTeX blueprint:
 
@@ -41,9 +41,8 @@ The intended mathematical reading order matches the current LaTeX blueprint:
 4. Henkinization
 5. current status and next frontier
 
-## Formalization Boundary
+# Formalization Boundary
 
 The next serious gap after the current logic-side port is not elementary
 first-order logic. It is the remaining packaging around completeness, followed
 by the forcing-side branch beginning around `Flypitch/PSetOrdinal.lean`.
-

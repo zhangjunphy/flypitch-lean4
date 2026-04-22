@@ -14,7 +14,7 @@ open Verso.Genre
 open Verso.Genre.Manual
 open Informal
 
-set_option verso.blueprint.numbering global
+set_option verso.blueprint.numbering "global"
 
 #doc (Manual) "Flypitch Lean 4 Blueprint" =>
 
@@ -35,4 +35,3 @@ under `blueprint/src/`.
 
 {blueprint_graph}
 {blueprint_summary}
-

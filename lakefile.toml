@@ -9,7 +9,6 @@ autoImplicit = false
 relaxedAutoImplicit = false
 maxSynthPendingDepth = 3
 linter.missingDocs = false
-linter.dupNamespace = false
 weak.linter.flexible = true
 weak.linter.mathlibStandardSet = true
 
