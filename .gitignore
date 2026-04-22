@@ -1,4 +1,5 @@
 /.lake
+/_out
 /.venv-blueprint
 /.venv-blueprint313
 /blueprint/web

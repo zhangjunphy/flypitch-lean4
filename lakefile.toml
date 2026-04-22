@@ -23,9 +23,26 @@ git = "https://github.com/leanprover/doc-gen4"
 rev = "v4.29.0"
 
 [[require]]
+name = "verso"
+git = "https://github.com/leanprover/verso"
+rev = "v4.29.0"
+
+[[require]]
+name = "VersoBlueprint"
+git = "https://github.com/ejgallego/verso-blueprint"
+rev = "v4.29.0"
+
+[[require]]
 name = "mathlib"
 scope = "leanprover-community"
 rev = "v4.29.0"
 
 [[lean_lib]]
 name = "Flypitch"
+
+[[lean_lib]]
+name = "FlypitchBlueprint"
+
+[[lean_exe]]
+name = "flypitch-blueprint"
+root = "FlypitchBlueprintMain"
