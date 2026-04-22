@@ -1,98 +1,76 @@
-name: Compile blueprint
+name: Blueprint Pages
 
 on:
+  pull_request:
   push:
     branches:
-      - master # Trigger on pushes to the default branch
-  workflow_dispatch:        # Allow manual triggering of the workflow from the GitHub Actions interface
+      - master
+  workflow_dispatch:
 
-# Cancel previous runs if a new commit is pushed to the same PR or branch
-concurrency:
-  group: ${{ github.ref }}  # Group runs by the ref (branch or PR)
-  cancel-in-progress: true  # Cancel any ongoing runs in the same group
-
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
-  contents: read          # Read access to repository contents
-  pages: write            # Write access to GitHub Pages
-  id-token: write         # Write access to ID tokens
-  issues: write           # Write access to issues
-  pull-requests: write    # Write access to pull requests
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: ${{ github.repository }}-blueprint-pages
+  cancel-in-progress: true
 
 jobs:
-  build_project:
+  build:
+    name: Build Verso Blueprint Site
     runs-on: ubuntu-latest
-    name: Build project
-    env:
-      HOMEPAGE_DIR: homepage
     steps:
-      - name: Checkout project
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - name: Build and lint project
-        uses: leanprover/lean-action@v1
+      - uses: actions/configure-pages@v5
 
-      - name: Build blueprint
-        uses: xu-cheng/texlive-action@v3
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Restore Lake package cache
+        uses: actions/cache@v4
         with:
-          docker_image: ghcr.io/xu-cheng/texlive-full:20260401
-          run: |
-            apk update
-            apk add --update make py3-pip git pkgconfig graphviz graphviz-dev gcc musl-dev
-            git config --global --add safe.directory $GITHUB_WORKSPACE
-            git config --global --add safe.directory `pwd`
-            python3 -m venv env
-            . env/bin/activate
-            python -m pip install --upgrade pip wheel requests
-            python -m pip install pygraphviz --config-settings="--global-option=build_ext" --config-settings="--global-option=-L/usr/lib/graphviz/" --config-settings="--global-option=-R/usr/lib/graphviz/"
-            python -m pip install leanblueprint
-            leanblueprint pdf
-            leanblueprint web
+          path: .lake/packages
+          key: ${{ runner.os }}-lake-packages-v1-${{ hashFiles('lean-toolchain', 'lake-manifest.json', 'lakefile.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-lake-packages-v1-
 
-      - name: Check declarations mentioned in blueprint
-        run: ~/.elan/bin/lake exe checkdecls blueprint/lean_decls
-
-      - name: Cache generated API doc dependencies
-        uses: actions/cache@v5
+      - name: Restore Lean build cache
+        uses: actions/cache@v4
         with:
           path: |
-            .lake/build/doc
-            .lake/build/doc-data
-            .lake/build/api-docs.db
-          key: Docs-${{ runner.os }}-${{ hashFiles('lake-manifest.json', 'lean-toolchain') }}
+            .lake/build/bin
+            .lake/build/lib
+            .lake/build/ir
+          key: ${{ runner.os }}-lean-build-v1-${{ hashFiles('lean-toolchain', 'lake-manifest.json', 'lakefile.toml', '*.lean', '**/*.lean', 'scripts/ci-verso-blueprint.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-lean-build-v1-${{ hashFiles('lean-toolchain', 'lake-manifest.json', 'lakefile.toml') }}-
+            ${{ runner.os }}-lean-build-v1-
 
-      - name: Build API documentation
+      - name: Show tool versions
         run: |
-          mkdir -p "$HOMEPAGE_DIR"
-          rm -rf "$HOMEPAGE_DIR/docs"
-          ~/.elan/bin/lake build Flypitch:docs
-          cp -r .lake/build/doc "$HOMEPAGE_DIR/docs"
+          lean --version
+          lake --version
 
-      - name: Copy blueprint into homepage
-        run: |
-          mkdir -p "$HOMEPAGE_DIR"
-          cp blueprint/print/print.pdf "$HOMEPAGE_DIR/blueprint.pdf"
-          rm -rf "$HOMEPAGE_DIR/blueprint"
-          cp -r blueprint/web "$HOMEPAGE_DIR/blueprint"
+      - name: Build Verso blueprint site
+        run: ./scripts/ci-verso-blueprint.sh
 
-      - name: Bundle homepage dependencies
-        uses: ruby/setup-ruby@v1
-        with:
-          working-directory: ${{ env.HOMEPAGE_DIR }}
-          ruby-version: "3.1"
-          bundler-cache: true
-
-      - name: Build website using Jekyll
-        working-directory: ${{ env.HOMEPAGE_DIR }}
-        env:
-          JEKYLL_GITHUB_TOKEN: ${{ github.token }}
-        run: JEKYLL_ENV=production bundle exec jekyll build
-
-      - name: Upload website
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: ${{ env.HOMEPAGE_DIR }}/_site
+          path: _out/site/html-multi
 
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
+  deploy:
+    name: Deploy Pages
+    if: github.event_name != 'pull_request'
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
