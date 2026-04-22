@@ -269,6 +269,79 @@ theorem Ord.le_iff_lt_or_eq {x z : pSet.{u}} (h₁ : Ord x) (h₂ : Ord z) :
     · exact subset_of_mem_Ord h₂ hLt
     · exact subset_of_all_mem fun a ha => (PSet.Mem.congr_right hEq).1 ha
 
+noncomputable def ordOfMemMk {η : ordinal} (i : (ordinal.mk η).Type) : ordinal :=
+  Classical.choose
+    (equiv_mk_of_mem_mk (η := η) (x := (ordinal.mk η).Func i)
+      (mem_mk' (x := ordinal.mk η) (i := i)))
+
+theorem ordOfMemMk_lt {η : ordinal} (i : (ordinal.mk η).Type) : ordOfMemMk i < η :=
+  (Classical.choose_spec
+    (equiv_mk_of_mem_mk (η := η) (x := (ordinal.mk η).Func i)
+      (mem_mk' (x := ordinal.mk η) (i := i)))).1
+
+theorem func_equiv_ordOfMemMk {η : ordinal} (i : (ordinal.mk η).Type) :
+    PSet.Equiv ((ordinal.mk η).Func i) (ordinal.mk (ordOfMemMk i)) :=
+  (Classical.choose_spec
+    (equiv_mk_of_mem_mk (η := η) (x := (ordinal.mk η).Func i)
+      (mem_mk' (x := ordinal.mk η) (i := i)))).2
+
+theorem mk_injects_into_of_mk_le_omega {η : ordinal}
+    (hLe : Cardinal.mk (ordinal.mk η).Type ≤ Cardinal.mk (PSet.omega : pSet.{u}).Type) :
+    injects_into (ordinal.mk η) PSet.omega := by
+  have hCount : Countable η.ToType := by
+    rw [← Ordinal.type_toPSet]
+    rw [mk_omega_eq] at hLe
+    exact Cardinal.mk_le_aleph0_iff.mp hLe
+  let e : η.ToType → Nat := Classical.choose (Countable.exists_injective_nat η.ToType)
+  have he : Function.Injective e := Classical.choose_spec (Countable.exists_injective_nat η.ToType)
+  let code : (ordinal.mk η).Type → η.ToType :=
+    fun i => Ordinal.ToType.mk ⟨ordOfMemMk i, ordOfMemMk_lt i⟩
+  refine ⟨pSet.function.mk (fun i => PSet.omega.Func (ULift.up (e (code i)))), ?_⟩
+  refine pSet.function.mk_is_injective_function
+    (fun i => PSet.omega.Func (ULift.up (e (code i))))
+    (fun i => mem_mk' (x := PSet.omega) (i := ULift.up (e (code i))))
+    ?_ ?_
+  · intro i j hEqv
+    have hOrd : ordOfMemMk i = ordOfMemMk j := by
+      exact ordinal.mk_inj
+        ((func_equiv_ordOfMemMk i).symm.trans (hEqv.trans (func_equiv_ordOfMemMk j)))
+    have hCodeIio : Ordinal.ToType.mk.symm (code i) = Ordinal.ToType.mk.symm (code j) := by
+      simpa [code] using hOrd
+    have hCode : code i = code j := Ordinal.ToType.mk.symm.injective hCodeIio
+    have hCodeNat : e (code i) = e (code j) := congrArg e hCode
+    simpa [hCodeNat] using
+      (PSet.Equiv.rfl :
+        PSet.Equiv (PSet.omega.Func (ULift.up (e (code j))))
+          (PSet.omega.Func (ULift.up (e (code j)))))
+  · intro i₁ i₂ hEqv
+    have hCodeULift : ULift.up (e (code i₁)) = ULift.up (e (code i₂)) := omega_inj hEqv
+    have hCodeNat : e (code i₁) = e (code i₂) := by
+      simpa using hCodeULift
+    have hCode : code i₁ = code i₂ := he hCodeNat
+    have hOrd : ordOfMemMk i₁ = ordOfMemMk i₂ := by
+      simpa [code] using congrArg (fun x : η.ToType => (x : ordinal)) hCode
+    exact (func_equiv_ordOfMemMk i₁).trans
+      ((mk_equiv_of_eq hOrd).trans (func_equiv_ordOfMemMk i₂).symm)
+
+theorem injects_into_omega_of_mem_aleph_one {z : pSet} (hMem : z ∈ aleph_one) :
+    injects_into z PSet.omega := by
+  rcases equiv_mk_of_mem_mk hMem with ⟨w, hwlt, hzEq⟩
+  have hInj : injects_into (ordinal.mk w) PSet.omega := by
+    apply mk_injects_into_of_mk_le_omega
+    rw [ordinal.mk_card, mk_omega_eq, Cardinal.card_le_iff]
+    rw [aleph_one_eq_succ_aleph_zero] at hwlt
+    exact hwlt
+  exact (injects_into_congr_left hzEq.symm).1 hInj
+
+theorem aleph_one_satisfies_spec : aleph_one_weak_Ord_spec aleph_one := by
+  refine ⟨aleph_one_Ord, ?_⟩
+  intro z hz
+  rcases hz with ⟨hzOrd, hzNotOmega⟩
+  rcases Ord.trichotomy aleph_one_Ord hzOrd with hEq | hLt | hLt
+  · exact (PSet.Subset.congr_left hEq).2 subset_refl
+  · exact subset_of_mem_Ord hzOrd hLt
+  · exact False.elim (hzNotOmega (injects_into_omega_of_mem_aleph_one hLt))
+
 end pSet
 
 end Flypitch

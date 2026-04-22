@@ -185,9 +185,362 @@ theorem countable_chain_condition_of_countable
   have hsCount : Countable s := f.injective.countable
   simpa [Set.countable_coe_iff] using hsCount
 
+theorem countable_chain_condition_of_topological_basis
+    [TopologicalSpace α] (B : Set (Set α)) (hB : IsTopologicalBasis B)
+    (h : ∀ s : Set (Set α), s ⊆ B → s.PairwiseDisjoint id → s.Countable) :
+    countable_chain_condition α := by
+  apply countable_chain_condition_of_nonempty
+  intro s hsnonempty hsopen hsdisj
+  let f : ∀ x : s, { y : Set α // y ∈ B ∧ y.Nonempty ∧ y ⊆ x.1 } := by
+    intro x
+    let hx : x.1.Nonempty := by
+      rw [Set.nonempty_iff_ne_empty]
+      exact hsnonempty x.2
+    let y : α := Classical.choose hx
+    have hy : y ∈ x.1 := Classical.choose_spec hx
+    let u : Set α := Classical.choose (hB.exists_subset_of_mem_open hy (hsopen x.2))
+    have huB : u ∈ B := (Classical.choose_spec (hB.exists_subset_of_mem_open hy (hsopen x.2))).1
+    have hyu : y ∈ u := (Classical.choose_spec (hB.exists_subset_of_mem_open hy (hsopen x.2))).2.1
+    have huSub : u ⊆ x.1 :=
+      (Classical.choose_spec (hB.exists_subset_of_mem_open hy (hsopen x.2))).2.2
+    exact ⟨u, huB, ⟨y, hyu⟩, huSub⟩
+  let s' : Set (Set α) := Set.range fun x : s => (f x).1
+  have hs' : s' ⊆ B := by
+    intro o ho
+    rcases ho with ⟨x, rfl⟩
+    exact (f x).2.1
+  have hdisj' : s'.PairwiseDisjoint id := by
+    intro a ha b hb hab
+    rcases ha with ⟨x, rfl⟩
+    rcases hb with ⟨x', rfl⟩
+    have hxx' : (x : Set α) ≠ (x' : Set α) := by
+      intro h
+      have hSub : x = x' := Subtype.ext h
+      subst hSub
+      exact hab rfl
+    exact (hsdisj x.2 x'.2 hxx').mono (f x).2.2.2 (f x').2.2.2
+  have hs'Count : s'.Countable := h s' hs' hdisj'
+  let emb : s ↪ s' :=
+    ⟨fun x => ⟨(f x).1, ⟨x, rfl⟩⟩, fun x x' hxx' => by
+      apply Subtype.ext
+      have hEq : (f x).1 = (f x').1 := Subtype.ext_iff.mp hxx'
+      rcases (f x).2.2.1 with ⟨y, hy⟩
+      have hy' : y ∈ (f x').1 := by simpa [hEq] using hy
+      exact hsdisj.elim_set x.2 x'.2 y ((f x).2.2.2 hy) ((f x').2.2.2 hy')⟩
+  simpa [Set.countable_coe_iff] using Set.countable_of_embedding emb hs'Count
+
+theorem countable_chain_condition_of_separable_space
+    [TopologicalSpace α] [SeparableSpace α] : countable_chain_condition α := by
+  apply countable_chain_condition_of_nonempty
+  intro s hsnonempty hsopen hsdisj
+  exact hsdisj.countable_of_isOpen hsopen fun o ho => by
+    rw [Set.nonempty_iff_ne_empty]
+    exact hsnonempty ho
+
 end CCC
+
+section Pi
+
+variable {α : Type u} {β : α → Type v} [∀ x, TopologicalSpace (β x)]
+
+/-- A subbasic open in the product topology, constraining a single coordinate. -/
+def standard_open {i : α} (o : Opens (β i)) : Set (∀ x, β x) :=
+  {f | f i ∈ o}
+
+variable (β)
+
+/-- The standard subbasis for the product topology. -/
+def pi_subbasis : Set (Set (∀ x, β x)) :=
+  Set.range fun x : Σ i : α, Opens (β i) => standard_open x.2
+
+theorem mem_pi_subbasis_iff {s : Set (∀ x, β x)} :
+    s ∈ pi_subbasis β ↔ ∃ i : α, ∃ o : Opens (β i), s = standard_open o := by
+  constructor
+  · rintro ⟨⟨i, o⟩, rfl⟩
+    exact ⟨i, o, rfl⟩
+  · rintro ⟨i, o, rfl⟩
+    exact ⟨⟨i, o⟩, rfl⟩
+
+theorem isOpen_standard_open {i : α} (o : Opens (β i)) :
+    IsOpen (standard_open o : Set (∀ x, β x)) := by
+  simpa [standard_open] using o.isOpen.preimage (continuous_apply i)
+
+theorem isOpen_of_mem_pi_subbasis {s : Set (∀ x, β x)} (hs : s ∈ pi_subbasis β) : IsOpen s := by
+  rcases (mem_pi_subbasis_iff (β := β)).1 hs with ⟨_, o, rfl⟩
+  exact isOpen_standard_open (β := β) o
+
+/-- A basis candidate for the product topology given by nonempty finite intersections of subbasic
+opens. -/
+def pi_basis : Set (Set (∀ x, β x)) :=
+  (fun f : Set (Set (∀ x, β x)) => ⋂₀ f) ''
+    {f | f.Finite ∧ f ⊆ pi_subbasis β ∧ (⋂₀ f) ≠ ∅}
+
+theorem nonempty_of_mem_pi_basis {o : Set (∀ x, β x)} (h : o ∈ pi_basis β) : o.Nonempty := by
+  rcases h with ⟨s, hs, rfl⟩
+  exact Set.nonempty_iff_ne_empty.mpr hs.2.2
+
+theorem mem_pi_basis_of_pi {s : ∀ x, Set (β x)} {i : Finset α}
+    (hs : ∀ x ∈ i, IsOpen (s x)) (hne : Set.pi (i : Set α) s ≠ ∅) :
+    Set.pi (i : Set α) s ∈ pi_basis β := by
+  let O : ↥(i : Set α) → Set (∀ x, β x) := fun x =>
+    standard_open ⟨s x.1, hs x.1 x.2⟩
+  have hInter : ⋂₀ Set.range O = Set.pi (i : Set α) s := by
+    ext f
+    constructor
+    · intro hf
+      rw [Set.mem_sInter] at hf
+      rw [Set.mem_pi]
+      intro x hx
+      exact hf (O ⟨x, hx⟩) ⟨⟨x, hx⟩, rfl⟩
+    · intro hf
+      rw [Set.mem_sInter]
+      intro t ht
+      rcases ht with ⟨x, rfl⟩
+      exact hf x.1 x.2
+  refine ⟨Set.range O, ?_, hInter⟩
+  refine ⟨Set.finite_range O, ?_, ?_⟩
+  · intro t ht
+    rcases ht with ⟨x, rfl⟩
+    exact (mem_pi_subbasis_iff (β := β)).2 ⟨x.1, ⟨s x.1, hs x.1 x.2⟩, rfl⟩
+  · simpa [hInter] using hne
+
+theorem sInter_eq_pi_of_finite_subbasis {f : Set (Set (∀ x, β x))} (hfin : f.Finite)
+    (hsub : f ⊆ pi_subbasis β) :
+    ∃ i : Finset α, ∃ s : ∀ x, Set (β x),
+      (∀ x ∈ i, IsOpen (s x)) ∧ (∀ x ∉ i, s x = Set.univ) ∧ ⋂₀ f = Set.pi (i : Set α) s := by
+  classical
+  induction f, hfin using Set.Finite.induction_on with
+  | empty =>
+      refine ⟨∅, fun _ => Set.univ, ?_, ?_, ?_⟩
+      · intro x hx
+        exact False.elim (Finset.notMem_empty x hx)
+      · intro x hx
+        rfl
+      · simp
+  | @insert t f htNotMem hfin ih =>
+      have htSub : t ∈ pi_subbasis β := hsub (by simp)
+      rcases (mem_pi_subbasis_iff (β := β)).1 htSub with ⟨coord, U, hU⟩
+      rcases ih (fun u hu => hsub (by simp [hu])) with ⟨i, s, hsOpen, hsUniv, hsInter⟩
+      let s' : ∀ a, Set (β a) := fun a =>
+        if h : a = coord then h ▸ (s coord ∩ ((U : Opens (β coord)) : Set (β coord))) else s a
+      refine ⟨insert coord i, s', ?_, ?_, ?_⟩
+      · intro a ha
+        by_cases hEq : a = coord
+        · subst hEq
+          have hscoord : IsOpen (s a) := by
+            by_cases hcoord : a ∈ i
+            · exact hsOpen a hcoord
+            · simpa [hsUniv a hcoord] using isOpen_univ
+          simpa [s'] using hscoord.inter U.isOpen
+        · simpa [s', hEq] using hsOpen a ((Finset.mem_insert.mp ha).resolve_left hEq)
+      · intro a ha
+        have hEq : a ≠ coord := fun h => ha (by simpa [h] using Finset.mem_insert_self coord i)
+        have hai : a ∉ i := fun hai => ha (by simp [hai])
+        simpa [s', hEq, hsUniv a hai]
+      · calc
+          ⋂₀ insert t f = t ∩ ⋂₀ f := by simp
+          _ = standard_open U ∩ ⋂₀ f := by rw [hU]
+          _ = standard_open U ∩ Set.pi (i : Set α) s := by rw [hsInter]
+          _ = Set.pi ((insert coord i : Finset α) : Set α) s' := by
+            ext g
+            rw [Set.mem_inter_iff, Set.mem_pi, Set.mem_pi]
+            constructor
+            · rintro ⟨hgU, hgpi⟩ a ha
+              rcases Finset.mem_insert.mp ha with rfl | haI
+              · have hgs : g a ∈ s a := by
+                  by_cases hcoord : a ∈ i
+                  · exact hgpi a hcoord
+                  · simpa [hsUniv a hcoord]
+                simpa [s'] using And.intro hgs hgU
+              · have hgs : g a ∈ s a := hgpi a haI
+                by_cases hEq : a = coord
+                · subst hEq
+                  simpa [s'] using And.intro (hgpi a haI) hgU
+                · simpa [s', hEq] using hgs
+            · intro hgpi
+              refine ⟨?_, ?_⟩
+              · have hgcoord : g coord ∈ s' coord := hgpi coord (by simp)
+                have hgpair : g coord ∈ s coord ∩ ((U : Opens (β coord)) : Set (β coord)) := by
+                  simpa [s'] using hgcoord
+                exact hgpair.2
+              · intro a haI
+                have hga : g a ∈ s' a := hgpi a (by simp [haI])
+                by_cases hEq : a = coord
+                · subst hEq
+                  have hgpair : g a ∈ s a ∩ ((U : Opens (β a)) : Set (β a)) := by
+                    simpa [s'] using hga
+                  exact hgpair.1
+                · simpa [s', hEq] using hga
+
+theorem mem_pi_basis_iff {o : Set (∀ x, β x)} :
+    o ∈ pi_basis β ↔ ∃ i : Finset α, ∃ s : ∀ x, Set (β x),
+      (∀ x ∈ i, IsOpen (s x)) ∧ Set.pi (i : Set α) s ≠ ∅ ∧ o = Set.pi (i : Set α) s := by
+  constructor
+  · intro ho
+    rcases ho with ⟨f, hf, rfl⟩
+    rcases sInter_eq_pi_of_finite_subbasis (β := β) hf.1 hf.2.1 with ⟨i, s, hsOpen, _, hsEq⟩
+    refine ⟨i, s, hsOpen, ?_, hsEq⟩
+    simpa [hsEq] using hf.2.2
+  · rintro ⟨i, s, hsOpen, hsNe, rfl⟩
+    exact mem_pi_basis_of_pi (β := β) hsOpen hsNe
+
+/-- The coordinate support of a cylinder family: the coordinates where the fiber is not `univ`. -/
+def pi_set_support (s : ∀ x, Set (β x)) : Set α :=
+  {x | s x ≠ Set.univ}
+
+theorem pi_set_support_subset_of_eq_univ_outside {s : ∀ x, Set (β x)} {i : Finset α}
+    (hsUniv : ∀ x ∉ i, s x = Set.univ) : pi_set_support (β := β) s ⊆ (i : Set α) := by
+  intro x hx
+  by_contra hxNotMem
+  exact hx (hsUniv x hxNotMem)
+
+theorem finite_pi_set_support_of_eq_univ_outside {s : ∀ x, Set (β x)} {i : Finset α}
+    (hsUniv : ∀ x ∉ i, s x = Set.univ) : (pi_set_support (β := β) s).Finite := by
+  exact Set.Finite.subset i.finite_toSet
+    (pi_set_support_subset_of_eq_univ_outside (β := β) hsUniv)
+
+theorem exists_eq_pi_with_finite_support_of_mem_pi_basis {o : Set (∀ x, β x)} (ho : o ∈ pi_basis β) :
+    ∃ i : Finset α, ∃ s : ∀ x, Set (β x),
+      (∀ x ∈ i, IsOpen (s x)) ∧ (∀ x ∉ i, s x = Set.univ) ∧ o = Set.pi (i : Set α) s := by
+  rcases ho with ⟨f, hf, rfl⟩
+  exact sInter_eq_pi_of_finite_subbasis (β := β) hf.1 hf.2.1
+
+theorem exists_finite_pi_set_support_of_mem_pi_basis {o : Set (∀ x, β x)} (ho : o ∈ pi_basis β) :
+    ∃ s : ∀ x, Set (β x),
+      (pi_set_support (β := β) s).Finite ∧ o = Set.pi (pi_set_support (β := β) s) s := by
+  classical
+  rcases exists_eq_pi_with_finite_support_of_mem_pi_basis (β := β) ho with
+    ⟨i, s, _, hsUniv, rfl⟩
+  refine ⟨s, finite_pi_set_support_of_eq_univ_outside (β := β) hsUniv, ?_⟩
+  ext g
+  rw [Set.mem_pi, Set.mem_pi]
+  constructor
+  · intro hg x hx
+    exact hg x (pi_set_support_subset_of_eq_univ_outside (β := β) hsUniv hx)
+  · intro hg x hx
+    by_cases hxs : x ∈ pi_set_support (β := β) s
+    · exact hg x hxs
+    · have hsx : s x = Set.univ := by
+        simpa [pi_set_support] using hxs
+      simpa [hsx]
+
+theorem mem_pi_pi_set_support_iff {s : ∀ x, Set (β x)} {f : ∀ x, β x} :
+    f ∈ Set.pi (pi_set_support (β := β) s) s ↔
+      ∀ x ∈ pi_set_support (β := β) s, f x ∈ s x := by
+  rw [Set.mem_pi]
+
+theorem mem_pi_pi_set_support_congr {s : ∀ x, Set (β x)} {f g : ∀ x, β x}
+    (hEq : Set.eqOn' f g (pi_set_support (β := β) s)) :
+    f ∈ Set.pi (pi_set_support (β := β) s) s ↔ g ∈ Set.pi (pi_set_support (β := β) s) s := by
+  rw [mem_pi_pi_set_support_iff (β := β), mem_pi_pi_set_support_iff (β := β)]
+  constructor
+  · intro hf x hx
+    simpa [hEq hx] using hf x hx
+  · intro hg x hx
+    simpa [hEq hx] using hg x hx
+
+theorem mem_pi_basis_congr {o : Set (∀ x, β x)} (ho : o ∈ pi_basis β) {f g : ∀ x, β x}
+    (hEq : ∃ s : ∀ x, Set (β x),
+      o = Set.pi (pi_set_support (β := β) s) s ∧ Set.eqOn' f g (pi_set_support (β := β) s)) :
+    f ∈ o ↔ g ∈ o := by
+  rcases hEq with ⟨s, rfl, hEq⟩
+  exact mem_pi_pi_set_support_congr (β := β) hEq
+
+/-- Cylinders over a fixed finite coordinate set, with fibers drawn from prescribed families. -/
+def pi_basis_from_finset (T : ∀ x, Set (Set (β x))) (i : Finset α) : Set (Set (∀ x, β x)) :=
+  {o | ∃ s : ∀ x, Set (β x),
+    (∀ x ∈ i, s x ∈ T x) ∧ (∀ x ∉ i, s x = Set.univ) ∧ o = Set.pi (i : Set α) s}
+
+/-- Cylinders with finite support, with supported fibers drawn from prescribed families. -/
+def pi_basis_from (T : ∀ x, Set (Set (β x))) : Set (Set (∀ x, β x)) :=
+  {o | ∃ i : Finset α, o ∈ pi_basis_from_finset (β := β) T i}
+
+theorem mem_pi_basis_from_iff {T : ∀ x, Set (Set (β x))} {o : Set (∀ x, β x)} :
+    o ∈ pi_basis_from (β := β) T ↔
+      ∃ i : Finset α, ∃ s : ∀ x, Set (β x),
+        (∀ x ∈ i, s x ∈ T x) ∧ (∀ x ∉ i, s x = Set.univ) ∧ o = Set.pi (i : Set α) s := by
+  constructor
+  · rintro ⟨i, s, hsT, hsUniv, rfl⟩
+    exact ⟨i, s, hsT, hsUniv, rfl⟩
+  · rintro ⟨i, s, hsT, hsUniv, rfl⟩
+    exact ⟨i, s, hsT, hsUniv, rfl⟩
+
+theorem countable_pi_basis_from_finset (T : ∀ x, Set (Set (β x))) (i : Finset α)
+    (hT : ∀ x, (T x).Countable) : (pi_basis_from_finset (β := β) T i).Countable := by
+  classical
+  let F : ((x : (i : Set α)) → Set (β x.1)) → Set (∀ x, β x) := fun u =>
+    {f | ∀ x : (i : Set α), f x.1 ∈ u x}
+  have hCountFuncs : (Set.pi Set.univ (fun x : (i : Set α) => T x.1)).Countable := by
+    exact Set.countable_univ_pi fun x => hT x.1
+  letI : Countable ↥(Set.pi Set.univ (fun x : (i : Set α) => T x.1)) := hCountFuncs.to_subtype
+  let G : ↥(Set.pi Set.univ (fun x : (i : Set α) => T x.1)) → Set (∀ x, β x) := fun u => F u
+  have hRange : (Set.range G).Countable := Set.countable_range G
+  refine hRange.mono ?_
+  intro o ho
+  rcases ho with ⟨u, hu, hsUniv, rfl⟩
+  refine ⟨⟨fun x : (i : Set α) => u x.1, ?_⟩, ?_⟩
+  · rw [Set.mem_pi]
+    intro x hx
+    exact hu x.1 x.2
+  · ext f
+    change (∀ x : (i : Set α), f x.1 ∈ u x.1) ↔ ∀ x ∈ i, f x ∈ u x
+    constructor
+    · intro hf x hx
+      exact hf ⟨x, hx⟩
+    · intro hf x
+      exact hf x.1 x.2
+
+theorem countable_pi_basis_from [Countable α] (T : ∀ x, Set (Set (β x)))
+    (hT : ∀ x, (T x).Countable) : (pi_basis_from (β := β) T).Countable := by
+  rw [show pi_basis_from (β := β) T = ⋃ i : Finset α, pi_basis_from_finset (β := β) T i by
+    ext o
+    constructor
+    · rintro ⟨i, ho⟩
+      exact Set.mem_iUnion.2 ⟨i, ho⟩
+    · intro ho
+      rcases Set.mem_iUnion.1 ho with ⟨i, hi⟩
+      exact ⟨i, hi⟩]
+  exact Set.countable_iUnion fun i => countable_pi_basis_from_finset (β := β) T i hT
+
+theorem mem_pi_basis_of_mem_pi_basis_from_finset {T : ∀ x, Set (Set (β x))} {i : Finset α}
+    (hOpen : ∀ x, T x ⊆ {s : Set (β x) | IsOpen s})
+    {o : Set (∀ x, β x)} (ho : o ∈ pi_basis_from_finset (β := β) T i) (hne : o ≠ ∅) :
+    o ∈ pi_basis β := by
+  rcases ho with ⟨s, hsT, hsUniv, rfl⟩
+  apply mem_pi_basis_of_pi (β := β)
+  · intro x hx
+    exact hOpen x (hsT x hx)
+  · exact hne
+
+theorem mem_pi_basis_of_mem_pi_basis_from {T : ∀ x, Set (Set (β x))}
+    (hOpen : ∀ x, T x ⊆ {s : Set (β x) | IsOpen s})
+    {o : Set (∀ x, β x)} (ho : o ∈ pi_basis_from (β := β) T) (hne : o ≠ ∅) :
+    o ∈ pi_basis β := by
+  rcases ho with ⟨i, hi⟩
+  exact mem_pi_basis_of_mem_pi_basis_from_finset (β := β) hOpen hi hne
+
+theorem isOpen_of_mem_pi_basis {o : Set (∀ x, β x)} (ho : o ∈ pi_basis β) : IsOpen o := by
+  rcases ho with ⟨s, hs, rfl⟩
+  refine hs.1.isOpen_sInter ?_
+  intro t ht
+  exact isOpen_of_mem_pi_subbasis (β := β) (hs.2.1 ht)
+
+theorem isTopologicalBasis_pi_basis : IsTopologicalBasis (pi_basis β) := by
+  apply isTopologicalBasis_of_isOpen_of_nhds
+  · intro o ho
+    exact isOpen_of_mem_pi_basis (β := β) ho
+  · intro f o hfo ho
+    rcases isOpen_pi_iff.1 ho f hfo with ⟨i, s, hs, hsub⟩
+    refine ⟨Set.pi (i : Set α) s, mem_pi_basis_of_pi (β := β) (fun x hx => (hs x hx).1) ?_, ?_,
+      hsub⟩
+    · exact Set.nonempty_iff_ne_empty.mp ⟨f, fun x hx => (hs x hx).2⟩
+    · exact fun x hx => (hs x hx).2
+
+end Pi
 
 end Flypitch
 
 attribute [nolint unusedArguments]
   Flypitch.countable_chain_condition_of_nonempty Flypitch.countable_chain_condition_of_countable
+  Flypitch.countable_chain_condition_of_topological_basis
+  Flypitch.countable_chain_condition_of_separable_space

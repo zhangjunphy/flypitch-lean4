@@ -105,6 +105,32 @@ The upstream project breaks into two large branches that meet in `zfc.lean`.
   `Set.countable_of_embedding`, `Set.eqOn'`, `Set.eqOn'_iff`,
   `countable_chain_condition`, `countable_chain_condition_of_nonempty`,
   `countable_chain_condition_of_countable`).
+- [x] Extend the `SetTheory` CCC tranche through the next upstream basis/separable-space lemmas
+  (`countable_chain_condition_of_topological_basis`,
+  `countable_chain_condition_of_separable_space`).
+- [x] Start the `SetTheory` product-topology section with the subbasic-open definitions and
+  immediate lemmas (`standard_open`, `pi_subbasis`, `mem_pi_subbasis_iff`,
+  `isOpen_standard_open`, `isOpen_of_mem_pi_subbasis`).
+- [x] Add the next `SetTheory` `pi`-section scaffold around finite subbasic intersections
+  (`pi_basis`, `nonempty_of_mem_pi_basis`).
+- [x] Add the first forward basic-open membership lemma for the `SetTheory` `pi` section
+  (`mem_pi_basis_of_pi`).
+- [x] Promote the `SetTheory` finite-cylinder family to an actual product-topology basis
+  (`isOpen_of_mem_pi_basis`, `isTopologicalBasis_pi_basis`).
+- [x] Add the missing finite-subbasis normal form for the `SetTheory` product basis
+  (`sInter_eq_pi_of_finite_subbasis`, `mem_pi_basis_iff`).
+- [x] Add the first finite-coordinate-support API for `SetTheory` product cylinders
+  (`pi_set_support`, `finite_pi_set_support_of_eq_univ_outside`,
+  `exists_eq_pi_with_finite_support_of_mem_pi_basis`,
+  `exists_finite_pi_set_support_of_mem_pi_basis`).
+- [x] Add the first support-based membership congruence lemmas for `SetTheory` cylinders
+  (`mem_pi_pi_set_support_iff`, `mem_pi_pi_set_support_congr`, `mem_pi_basis_congr`).
+- [x] Add the first countable cylinder-family candidate for the `SetTheory` product basis
+  (`pi_basis_from_finset`, `pi_basis_from`, `countable_pi_basis_from_finset`,
+  `countable_pi_basis_from`, `mem_pi_basis_of_mem_pi_basis_from*`).
+- [x] Extend the pure-`pSet` `aleph_one.lean` port through the first countability/specification
+  tranche (`mk_injects_into_of_mk_le_omega`, `injects_into_omega_of_mem_aleph_one`,
+  `aleph_one_satisfies_spec`).
 - [ ] Port the remaining term-model/completeness tail needed for upstream `completeness.lean`.
 - [ ] Port the forcing-side root files `pSet_ordinal.lean` and `set_theory.lean`.
 - [ ] Port the topology/regular-open/collapse stack.
@@ -175,12 +201,47 @@ Evidence-backed status:
   and the first ordinal-comparison lemmas
   (`Ord.lt_of_ne_and_le`, `Ord.le_or_le`, `Ord.trichotomy`, `Ord.lt_of_le_of_lt`,
   `Ord.le_iff_lt_or_eq`).
+- `Flypitch/AlephOne.lean` now also includes the next countability/specification step from
+  upstream: the `ordinal.mk η ↪ ω` construction for countable ordinals together with
+  `injects_into_omega_of_mem_aleph_one` and the witness that `aleph_one` satisfies the intended
+  weak ordinal specification.
 - `Flypitch/SetTheory.lean` now exists and contains the first delta-system tranche from upstream:
   the core definition plus the basic preimage/image/reindexing preservation lemmas, the first
   small `Set` helper tranche (`finite_of_finite_image_of_inj_on`, `countable_of_embedding`,
   `eqOn'`, `eqOn'_iff`), and the opening countable-chain-condition API
   (`countable_chain_condition`, `countable_chain_condition_of_nonempty`,
   `countable_chain_condition_of_countable`).
+- The `SetTheory` file now also continues through the next CCC corollaries from upstream:
+  `countable_chain_condition_of_topological_basis` and
+  `countable_chain_condition_of_separable_space`.
+- `Flypitch/SetTheory.lean` now also starts the upstream `pi` section with the product-topology
+  subbasic opens: `standard_open`, `pi_subbasis`, and the immediate membership/open-ness lemmas
+  needed before porting the larger `pi_basis` and support machinery.
+- The `SetTheory` `pi` section now also has the first finite-intersection scaffold:
+  `pi_basis` and `nonempty_of_mem_pi_basis`.
+- The `SetTheory` `pi` section now also has the easy forward cylinder-membership lemma
+  `mem_pi_basis_of_pi`, which is the first half of the larger `pi_basis_eq` normal-form proof.
+- The `SetTheory` `pi` section now also shows that these nonempty finite cylinders really form a
+  product-topology basis: `isOpen_of_mem_pi_basis` and `isTopologicalBasis_pi_basis` are now in
+  place, so later support/countability arguments can use `pi_basis` directly instead of reasoning
+  from `isOpen_pi_iff` each time.
+- The `SetTheory` `pi` section now also has the finite-subbasis normalization that had still been
+  missing from the earlier tranche: `sInter_eq_pi_of_finite_subbasis` rewrites any finite
+  intersection of subbasic cylinders into a single finite `Set.pi` cylinder, and `mem_pi_basis_iff`
+  packages this as the expected normal form for basis elements.
+- The `SetTheory` `pi` section now also begins the downstream support machinery: `pi_set_support`
+  records the coordinates where a cylinder differs from `univ`, it is finite whenever the family is
+  `univ` off a finite set, and every `pi_basis` member is now shown to admit such a finite-support
+  presentation.
+- The same `SetTheory` support tranche now also has the first behavioral consequence of finite
+  support: membership in a supported cylinder depends only on equality on the supported coordinates
+  (`mem_pi_pi_set_support_congr`), and the repo now has a corresponding `pi_basis` membership
+  congruence wrapper (`mem_pi_basis_congr`).
+- On top of that, `SetTheory` now has a genuine countable-basis candidate built from countable
+  per-coordinate families: `pi_basis_from_finset` and `pi_basis_from` package finitely supported
+  cylinders whose active fibers come from chosen families, `countable_pi_basis_from*` proves these
+  families are countable when the index type and each coordinate family are countable, and
+  `mem_pi_basis_of_mem_pi_basis_from*` links nonempty members back to the ambient `pi_basis`.
 
 So the real near-term blockers are now concentrated on the forcing side:
 
