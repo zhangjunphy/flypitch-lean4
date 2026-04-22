@@ -269,6 +269,7 @@ theorem Ord.le_iff_lt_or_eq {x z : pSet.{u}} (h₁ : Ord x) (h₂ : Ord z) :
     · exact subset_of_mem_Ord h₂ hLt
     · exact subset_of_all_mem fun a ha => (PSet.Mem.congr_right hEq).1 ha
 
+/-- The ordinal coded by an element of `ordinal.mk η`, obtained from the witnessing equivalence. -/
 noncomputable def ordOfMemMk {η : ordinal} (i : (ordinal.mk η).Type) : ordinal :=
   Classical.choose
     (equiv_mk_of_mem_mk (η := η) (x := (ordinal.mk η).Func i)

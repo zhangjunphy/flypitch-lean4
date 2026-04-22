@@ -611,6 +611,7 @@ def L_empty : Language :=
 def T_empty (L : Language.{u}) : Theory L :=
   ∅
 
+/-- The empty theory in the empty language, containing only logical equality. -/
 @[reducible] def T_equality : Theory L_empty :=
   T_empty L_empty
 

@@ -401,7 +401,9 @@ theorem pi_basis_eq :
 def support (o : Set (∀ x, β x)) : Set α :=
   ⋂₀ {s : Set α | ∀ ⦃f g : ∀ x, β x⦄, Set.eqOn' f g s → f ∈ o → g ∈ o}
 
-theorem support_pi {i : Set α} {s : ∀ x, Set (β x)} (h : (Set.pi i s).Nonempty) :
+omit [∀ x, TopologicalSpace (β x)] in
+theorem support_pi {i : Set α} {s : ∀ x, Set (β x)}
+    (h : (Set.pi i s).Nonempty) :
     support (β := β) (Set.pi i s) = {x | x ∈ i ∧ s x ≠ Set.univ} := by
   classical
   apply Set.Subset.antisymm
@@ -470,12 +472,15 @@ theorem finite_support_of_pi_basis {o : Set (∀ x, β x)} (h : o ∈ pi_basis �
 def pi_set_support (s : ∀ x, Set (β x)) : Set α :=
   {x | s x ≠ Set.univ}
 
-theorem pi_set_support_subset_of_eq_univ_outside {s : ∀ x, Set (β x)} {i : Finset α}
+omit [∀ x, TopologicalSpace (β x)] in
+theorem pi_set_support_subset_of_eq_univ_outside
+    {s : ∀ x, Set (β x)} {i : Finset α}
     (hsUniv : ∀ x ∉ i, s x = Set.univ) : pi_set_support (β := β) s ⊆ (i : Set α) := by
   intro x hx
   by_contra hxNotMem
   exact hx (hsUniv x hxNotMem)
 
+omit [∀ x, TopologicalSpace (β x)] in
 theorem finite_pi_set_support_of_eq_univ_outside {s : ∀ x, Set (β x)} {i : Finset α}
     (hsUniv : ∀ x ∉ i, s x = Set.univ) : (pi_set_support (β := β) s).Finite := by
   exact Set.Finite.subset i.finite_toSet
@@ -506,11 +511,13 @@ theorem exists_finite_pi_set_support_of_mem_pi_basis {o : Set (∀ x, β x)} (ho
         simpa [pi_set_support] using hxs
       simpa [hsx]
 
+omit [∀ x, TopologicalSpace (β x)] in
 theorem mem_pi_pi_set_support_iff {s : ∀ x, Set (β x)} {f : ∀ x, β x} :
     f ∈ Set.pi (pi_set_support (β := β) s) s ↔
       ∀ x ∈ pi_set_support (β := β) s, f x ∈ s x := by
   rw [Set.mem_pi]
 
+omit [∀ x, TopologicalSpace (β x)] in
 theorem mem_pi_pi_set_support_congr {s : ∀ x, Set (β x)} {f g : ∀ x, β x}
     (hEq : Set.eqOn' f g (pi_set_support (β := β) s)) :
     f ∈ Set.pi (pi_set_support (β := β) s) s ↔ g ∈ Set.pi (pi_set_support (β := β) s) s := by
@@ -537,7 +544,9 @@ def pi_basis_from_finset (T : ∀ x, Set (Set (β x))) (i : Finset α) : Set (Se
 def pi_basis_from (T : ∀ x, Set (Set (β x))) : Set (Set (∀ x, β x)) :=
   {o | ∃ i : Finset α, o ∈ pi_basis_from_finset (β := β) T i}
 
-theorem mem_pi_basis_from_iff {T : ∀ x, Set (Set (β x))} {o : Set (∀ x, β x)} :
+omit [∀ x, TopologicalSpace (β x)] in
+theorem mem_pi_basis_from_iff
+    {T : ∀ x, Set (Set (β x))} {o : Set (∀ x, β x)} :
     o ∈ pi_basis_from (β := β) T ↔
       ∃ i : Finset α, ∃ s : ∀ x, Set (β x),
         (∀ x ∈ i, s x ∈ T x) ∧ (∀ x ∉ i, s x = Set.univ) ∧ o = Set.pi (i : Set α) s := by
@@ -547,7 +556,9 @@ theorem mem_pi_basis_from_iff {T : ∀ x, Set (Set (β x))} {o : Set (∀ x, β 
   · rintro ⟨i, s, hsT, hsUniv, rfl⟩
     exact ⟨i, s, hsT, hsUniv, rfl⟩
 
-theorem countable_pi_basis_from_finset (T : ∀ x, Set (Set (β x))) (i : Finset α)
+omit [∀ x, TopologicalSpace (β x)] in
+theorem countable_pi_basis_from_finset
+    (T : ∀ x, Set (Set (β x))) (i : Finset α)
     (hT : ∀ x, (T x).Countable) : (pi_basis_from_finset (β := β) T i).Countable := by
   classical
   let F : ((x : (i : Set α)) → Set (β x.1)) → Set (∀ x, β x) := fun u =>
@@ -572,6 +583,7 @@ theorem countable_pi_basis_from_finset (T : ∀ x, Set (Set (β x))) (i : Finset
     · intro hf x
       exact hf x.1 x.2
 
+omit [∀ x, TopologicalSpace (β x)] in
 theorem countable_pi_basis_from [Countable α] (T : ∀ x, Set (Set (β x)))
     (hT : ∀ x, (T x).Countable) : (pi_basis_from (β := β) T).Countable := by
   rw [show pi_basis_from (β := β) T = ⋃ i : Finset α, pi_basis_from_finset (β := β) T i by

@@ -1678,7 +1678,7 @@ noncomputable def completeHenkinizationOfConsis {L : Language.{u}} {T : Theory L
   (completeHenkinizationOfConsis (L := L) (T := T) hT).2.1
 
 /-- The completed Henkinization is complete. -/
-@[reducible] def completion_of_henkinization_complete {L : Language.{u}} {T : Theory L}
+theorem completion_of_henkinization_complete {L : Language.{u}} {T : Theory L}
     (hT : is_consistent T) :
     is_complete (completion_of_henkinization (L := L) (T := T) hT) :=
   (completion_of_henkinization_core (L := L) (T := T) hT).2
@@ -1868,7 +1868,7 @@ def term_model_fun' {L : Language.{u}} {T : Theory L} {l : Nat}
   Quotient.mk'' (bd_apps t ts)
 
 /-- The raw term-model application respects provable equality of representatives. -/
-noncomputable def term_model_fun_eq {L : Language.{u}} {T : Theory L} {l : Nat}
+theorem term_model_fun_eq {L : Language.{u}} {T : Theory L} {l : Nat}
     (t t' : closed_preterm L (l + 1)) (x x' : closed_term L)
     (ht : equal_preterms (Theory.fst T) t.fst t'.fst)
     (hx : Theory.fst T ⊢ x.fst ≃ x'.fst) (ts : dvector (closed_term L) l) :
@@ -1894,7 +1894,7 @@ def term_model_rel' {L : Language.{u}} {T : Theory L} {l : Nat}
   T ⊢' bd_apps_rel f ts
 
 /-- The raw term-model relation respects provable equality of representatives. -/
-noncomputable def term_model_rel_iff {L : Language.{u}} {T : Theory L} {l : Nat}
+theorem term_model_rel_iff {L : Language.{u}} {T : Theory L} {l : Nat}
     (f f' : presentence L (l + 1)) (x x' : closed_term L)
     (ht : equiv_preformulae (Theory.fst T) f.fst f'.fst)
     (hx : Theory.fst T ⊢ x.fst ≃ x'.fst) (ts : dvector (closed_term L) l) :
@@ -1925,7 +1925,7 @@ noncomputable def term_model {L : Language.{u}} (T : Theory L) : Structure L whe
   Quotient.mk'' t
 
 /-- Evaluating a term model function on canonical quotient classes recovers the raw application. -/
-noncomputable def term_model_fun_mk {L : Language.{u}} {T : Theory L} {l : Nat}
+theorem term_model_fun_mk {L : Language.{u}} {T : Theory L} {l : Nat}
     (t : closed_preterm L l) (ts : dvector (closed_term L) l) :
     term_model_fun (T := T) t (ts.map (term_mk (T := T))) = term_mk (T := T) (bd_apps t ts) := by
   induction ts with
@@ -1941,7 +1941,7 @@ noncomputable def term_model_fun_mk {L : Language.{u}} {T : Theory L} {l : Nat}
         (ih (bd_app t x))
 
 /-- Evaluating a term model relation on canonical quotient classes recovers the raw predicate. -/
-noncomputable def term_model_rel_mk {L : Language.{u}} {T : Theory L} {l : Nat}
+theorem term_model_rel_mk {L : Language.{u}} {T : Theory L} {l : Nat}
     (f : presentence L l) (ts : dvector (closed_term L) l) :
     term_model_rel (T := T) f (ts.map (term_mk (T := T))) ↔ term_model_rel' (T := T) f ts := by
   induction ts with
@@ -2149,7 +2149,7 @@ lemma term_model_subst0 {L : Language.{u}} {T : Theory L} (f : bounded_formula L
       simpa [subst_formula] using ih (n + 1)
 
 /-- A Henkin theory has a nonempty term model by choosing any witness constant. -/
-instance nonempty_term_model {L : Language.{u}} {T : Theory L} (hT : has_enough_constants T) :
+theorem nonempty_term_model {L : Language.{u}} {T : Theory L} (hT : has_enough_constants T) :
     Nonempty (term_model T) := by
   rcases hT with ⟨C, _⟩
   refine ⟨Quotient.mk'' (bd_const (L := L) (n := 0)
