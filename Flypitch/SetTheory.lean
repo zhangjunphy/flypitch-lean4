@@ -81,6 +81,58 @@ theorem is_delta_system_precompose_iff {ι : Type w} {ι' : Type w'} {α : Type 
   · intro h
     simpa [Function.comp_def] using is_delta_system_precompose f.symm f.symm.injective h
 
+theorem succ_is_regular {c : Cardinal} (h : Cardinal.aleph0 ≤ c) : Cardinal.IsRegular (Order.succ c) :=
+  Cardinal.isRegular_succ h
+
+theorem mk_set_le {α : Type u} (s : Set α) : Cardinal.mk s ≤ Cardinal.mk α :=
+  Cardinal.mk_set_le s
+
+theorem mk_range_eq {α : Type u} {β : Type u} (f : α → β) (h : Function.Injective f) :
+    Cardinal.mk (Set.range f) = Cardinal.mk α :=
+  Cardinal.mk_range_eq f h
+
+theorem card_typein_toType_lt (c : Cardinal) (x : c.ord.ToType) :
+    Ordinal.card (Ordinal.typein (α := c.ord.ToType) (· < ·) x) < c :=
+  Cardinal.card_typein_toType_lt c x
+
+theorem not_unbounded_iff {α : Type u} {r : α → α → Prop} (s : Set α) :
+    ¬ Set.Unbounded r s ↔ Set.Bounded r s :=
+  Set.not_unbounded_iff s
+
+theorem unbounded_of_unbounded_iUnion {α ι : Type u} [LinearOrder α] {s : ι → Set α}
+    (h₁ : IsCofinal (⋃ i, s i)) (h₂ : Cardinal.mk ι < Order.cof α) : ∃ i, IsCofinal (s i) :=
+  Cardinal.unbounded_of_unbounded_iUnion h₁ h₂
+
+theorem ord_eq (α : Type u) : ∃ (r : α → α → Prop) (_ : IsWellOrder α r),
+    Cardinal.ord (Cardinal.mk α) = Ordinal.type r :=
+  Cardinal.exists_ord_eq α
+
+theorem lt_ord {c : Cardinal} {o : Ordinal} : o < Cardinal.ord c ↔ o.card < c :=
+  Cardinal.lt_ord
+
+theorem ord_lt_ord {c₁ c₂ : Cardinal} : Cardinal.ord c₁ < Cardinal.ord c₂ ↔ c₁ < c₂ :=
+  Cardinal.ord_lt_ord
+
+theorem mk_image_eq {α β : Type u} (f : α → β) (s : Set α) (h : Function.Injective f) :
+    Cardinal.mk (f '' s) = Cardinal.mk s :=
+  Cardinal.mk_image_eq (s := s) h
+
+theorem mk_preimage_of_injective_of_subset_range {α β : Type u} (f : α → β) (s : Set β)
+    (h : Function.Injective f) (h2 : s ⊆ Set.range f) :
+    Cardinal.mk (f ⁻¹' s) = Cardinal.mk s :=
+  Cardinal.mk_preimage_of_injective_of_subset_range f s h h2
+
+theorem card_type {α : Type u} (r : α → α → Prop) [IsWellOrder α r] :
+    Ordinal.card (Ordinal.type r) = Cardinal.mk α :=
+  Ordinal.card_type r
+
+theorem mk_bounded_subset_le {α : Type u} (s : Set α) (c : Cardinal) :
+    Cardinal.mk { t : Set α // t ⊆ s ∧ Cardinal.mk t ≤ c } ≤ max (Cardinal.mk s) Cardinal.aleph0 ^ c :=
+  Cardinal.mk_bounded_subset_le s c
+
+theorem le_powerlt {b c : Cardinal} (a : Cardinal) (h : c < b) : a ^ c ≤ a ^< b :=
+  Cardinal.le_powerlt a h
+
 end delta_system
 
 namespace Set
@@ -468,6 +520,35 @@ theorem finite_support_of_pi_basis {o : Set (∀ x, β x)} (h : o ∈ pi_basis �
   rw [support_pi (β := β) (i := (i : Set α)) (s := s) (Set.nonempty_iff_ne_empty.mpr hsNe)]
   exact Set.Finite.subset i.finite_toSet (by intro x hx; exact hx.1)
 
+/-- Splice two dependent functions, using the first on `s` and the second off `s`. -/
+noncomputable def extend (g₁ g₂ : ∀ x, β x) (s : Set α) (x : α) : β x := by
+  classical
+  exact if h : x ∈ s then g₁ x else g₂ x
+
+theorem isOpenMap_apply (i : α) : IsOpenMap (fun f : ∀ x, β x => f i) := by
+  simpa using isOpenMap_eval (i := i)
+
+theorem is_open_map_apply (i : α) : IsOpenMap (fun f : ∀ x, β x => f i) :=
+  isOpenMap_apply (β := β) i
+
+omit [∀ x, TopologicalSpace (β x)] in
+theorem restrict_image_pi (t s : Set α) (s' : ∀ i, Set (β i))
+    (h : (Set.pi t s').Nonempty) :
+    (Set.restrict s) '' Set.pi t s' = Set.pi (Subtype.val ⁻¹' t) (fun i => s' i.1) := by
+  classical
+  apply Set.Subset.antisymm
+  · rintro _ ⟨f, hf, rfl⟩ i hi
+    exact hf _ hi
+  · rcases h with ⟨f', hf'⟩
+    intro f hf
+    refine ⟨fun i => if hmem : i ∈ s then f ⟨i, hmem⟩ else f' i, ?_, ?_⟩
+    · intro i hi
+      by_cases his : i ∈ s
+      · simpa [Set.restrict, his] using hf ⟨i, his⟩ hi
+      · simpa [extend, his] using hf' i hi
+    · funext i
+      simp [Set.restrict, i.2]
+
 /-- The coordinate support of a cylinder family: the coordinates where the fiber is not `univ`. -/
 def pi_set_support (s : ∀ x, Set (β x)) : Set α :=
   {x | s x ≠ Set.univ}
@@ -694,6 +775,22 @@ theorem isTopologicalBasis_pi_basis : IsTopologicalBasis (pi_basis β) := by
       hsub⟩
     · exact Set.nonempty_iff_ne_empty.mp ⟨f, fun x hx => (hs x hx).2⟩
     · exact fun x hx => (hs x hx).2
+
+theorem is_topological_basis_pi : IsTopologicalBasis (pi_basis β) :=
+  isTopologicalBasis_pi_basis (β := β)
+
+theorem isOpenMap_restrict (s : Set α) : IsOpenMap (fun f : ∀ x, β x => Set.restrict s f) := by
+  refine (isTopologicalBasis_pi_basis (β := β)).isOpenMap_iff.2 ?_
+  intro o ho
+  rcases (mem_pi_basis_iff (β := β)).1 ho with ⟨i, s', hsOpen, hsNe, rfl⟩
+  have hne : (Set.pi (i : Set α) s').Nonempty := Set.nonempty_iff_ne_empty.mpr hsNe
+  rw [restrict_image_pi (β := β) (t := (i : Set α)) (s := s) (s' := s') hne]
+  have hpre : ((Subtype.val : s → α) ⁻¹' (i : Set α)).Finite := by
+    exact i.finite_toSet.preimage Subtype.val_injective.injOn
+  exact isOpen_set_pi hpre (fun x hx => hsOpen x.1 hx)
+
+theorem is_open_map_restrict (s : Set α) : IsOpenMap (fun f : ∀ x, β x => Set.restrict s f) :=
+  isOpenMap_restrict (β := β) s
 
 end Pi
 

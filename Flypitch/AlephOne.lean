@@ -286,6 +286,38 @@ theorem func_equiv_ordOfMemMk {η : ordinal} (i : (ordinal.mk η).Type) :
     (equiv_mk_of_mem_mk (η := η) (x := (ordinal.mk η).Func i)
       (mem_mk' (x := ordinal.mk η) (i := i)))).2
 
+theorem rank_func_eq_ordOfMemMk {η : ordinal} (i : (ordinal.mk η).Type) :
+    PSet.rank ((ordinal.mk η).Func i) = ordOfMemMk i := by
+  simpa [ordinal.mk] using PSet.rank_congr (func_equiv_ordOfMemMk i)
+
+theorem ordOfMemMk_eq_of_equiv {η : ordinal} {i j : (ordinal.mk η).Type}
+    (hEqv : PSet.Equiv ((ordinal.mk η).Func i) ((ordinal.mk η).Func j)) :
+    ordOfMemMk i = ordOfMemMk j := by
+  exact ordinal.mk_inj
+    ((func_equiv_ordOfMemMk i).symm.trans (hEqv.trans (func_equiv_ordOfMemMk j)))
+
+/-- Reinterpret the indexing type of `ordinal.mk η` as `η.ToType`. -/
+abbrev mkTypeEquiv (η : ordinal) : (ordinal.mk η).Type ≃ η.ToType := by
+  simpa [ordinal.mk] using Equiv.refl (η.ToType)
+
+theorem mkToTypeEquivPSet {η : ordinal} :
+    PSet.Equiv (PSet.mk η.ToType (fun a => ordinal.mk (a : ordinal))) (ordinal.mk η) := by
+  apply (ext_iff).2
+  intro z
+  constructor
+  · intro hz
+    rcases mem_unfold.mp hz with ⟨a, hza⟩
+    change η.ToType at a
+    rw [ordinal.mk, Ordinal.mem_toPSet_iff]
+    refine ⟨(a : ordinal), ?_, ?_⟩
+    · exact (a : Set.Iio η).2
+    · simpa using hza
+  · intro hz
+    rcases equiv_mk_of_mem_mk hz with ⟨ρ, hρη, hzρ⟩
+    refine mem_unfold.mpr ?_
+    refine ⟨(Ordinal.ToType.mk ⟨ρ, hρη⟩ : η.ToType), ?_⟩
+    simpa [ordinal.mk] using hzρ
+
 theorem mk_injects_into_of_mk_le_omega {η : ordinal}
     (hLe : Cardinal.mk (ordinal.mk η).Type ≤ Cardinal.mk (PSet.omega : pSet.{u}).Type) :
     injects_into (ordinal.mk η) PSet.omega := by
@@ -334,6 +366,36 @@ theorem injects_into_omega_of_mem_aleph_one {z : pSet} (hMem : z ∈ aleph_one) 
     exact hwlt
   exact (injects_into_congr_left hzEq.symm).1 hInj
 
+theorem mk_le_omega_of_injects_into {η : ordinal}
+    (h : injects_into (ordinal.mk η) PSet.omega) : Cardinal.mk (ordinal.mk η).Type ≤ cardinal.omega := by
+  rcases h with ⟨f, hfFunc, hfInj⟩
+  have hfFunc' : is_func (PSet.mk η.ToType (fun a => ordinal.mk (a : ordinal))) PSet.omega f :=
+    (is_func_congr_left (mkToTypeEquivPSet (η := η))).mpr hfFunc
+  let e : η.ToType → PSet.omega.Type := function_lift_indexed hfFunc'.2
+  have he : Function.Injective e := by
+    intro a₁ a₂ hEq
+    have hEqv : PSet.Equiv (ordinal.mk (a₁ : ordinal)) (ordinal.mk (a₂ : ordinal)) :=
+      equiv_of_function_lift_indexed_eq hfFunc' hfInj hEq
+    apply Ordinal.ToType.mk.symm.injective
+    apply Subtype.ext
+    exact ordinal.mk_inj hEqv
+  have hxy : Cardinal.mk η.ToType ≤ Cardinal.mk PSet.omega.Type := Cardinal.mk_le_of_injective he
+  simpa [Ordinal.type_toPSet, mk_omega_eq] using hxy
+
+theorem aleph_one_not_injects_into_omega : ¬ injects_into aleph_one PSet.omega := by
+  intro hInj
+  have hLe : Cardinal.mk aleph_one.Type ≤ cardinal.omega := mk_le_omega_of_injects_into hInj
+  have hLt : cardinal.omega < Cardinal.mk aleph_one.Type := by
+    rw [show Cardinal.mk aleph_one.Type = Cardinal.aleph 1 by simp [aleph_one, pSet.card_ex]]
+    exact omega_lt_aleph_one
+  exact not_le_of_gt hLt hLe
+
+theorem empty_satisfies_weak_spec : aleph_one_weak_Ord_spec (∅ : pSet.{u}) := by
+  refine ⟨?_, ?_⟩
+  · simpa using (Ord_mk (0 : ordinal))
+  · intro y hy
+    exact subset_of_all_mem (fun z hz => False.elim (PSet.notMem_empty _ hz))
+
 theorem aleph_one_satisfies_spec : aleph_one_weak_Ord_spec aleph_one := by
   refine ⟨aleph_one_Ord, ?_⟩
   intro z hz
@@ -342,6 +404,26 @@ theorem aleph_one_satisfies_spec : aleph_one_weak_Ord_spec aleph_one := by
   · exact (PSet.Subset.congr_left hEq).2 subset_refl
   · exact subset_of_mem_Ord hzOrd hLt
   · exact False.elim (hzNotOmega (injects_into_omega_of_mem_aleph_one hLt))
+
+theorem equiv_aleph_one_of_weak_spec_of_not_injects_into_omega {x : pSet.{u}}
+    (hx : aleph_one_weak_Ord_spec x) (hxNo : ¬ injects_into x PSet.omega) :
+    PSet.Equiv x (aleph_one : pSet.{u}) := by
+  rcases hx with ⟨hxOrd, hxMin⟩
+  have hxSub : x ⊆ aleph_one := by
+    exact hxMin aleph_one ⟨aleph_one_Ord, aleph_one_not_injects_into_omega⟩
+  have haSub : aleph_one ⊆ x := by
+    exact aleph_one_satisfies_spec.2 x ⟨hxOrd, hxNo⟩
+  exact (ext_iff (x := x) (y := (aleph_one : pSet.{u}))).2 <| by
+    intro z
+    constructor
+    · intro hz
+      exact all_mem_of_subset hxSub z hz
+    · intro hz
+      exact all_mem_of_subset haSub z hz
+
+theorem equiv_aleph_one_of_weak_spec {x : pSet.{u}} (hx : aleph_one_weak_Ord_spec x) :
+    ¬ injects_into x PSet.omega → PSet.Equiv x (aleph_one : pSet.{u}) :=
+  equiv_aleph_one_of_weak_spec_of_not_injects_into_omega hx
 
 end pSet
 

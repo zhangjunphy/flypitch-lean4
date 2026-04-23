@@ -142,9 +142,8 @@ The upstream project breaks into two large branches that meet in `zfc.lean`.
 - [x] Extend the pure-`pSet` `aleph_one.lean` port through the first countability/specification
   tranche (`mk_injects_into_of_mk_le_omega`, `injects_into_omega_of_mem_aleph_one`,
   `aleph_one_satisfies_spec`).
-- [x] Extend the `AlephOne` `pSet` tail through non-countability and weak-spec uniqueness
-  (`mk_le_omega_of_injects_into`, `aleph_one_not_injects_into_omega`,
-  `equiv_aleph_one_of_weak_spec`).
+- [x] Extend the `AlephOne` `pSet` tail through the remaining repo-local uniqueness wrapper
+  after the non-countability step (`equiv_aleph_one_of_weak_spec`).
 - [ ] Port the remaining term-model/completeness tail needed for upstream `completeness.lean`.
 - [ ] Port the forcing-side root files `pSet_ordinal.lean` and `set_theory.lean`.
 - [ ] Port the topology/regular-open/collapse stack.
@@ -219,12 +218,14 @@ Evidence-backed status:
   upstream: the `ordinal.mk η ↪ ω` construction for countable ordinals together with
   `injects_into_omega_of_mem_aleph_one` and the witness that `aleph_one` satisfies the intended
   weak ordinal specification.
-- The `AlephOne` `pSet` tranche now also proves the converse non-countability direction at
-  `aleph_one` itself: `mk_le_omega_of_injects_into` turns a `pSet` injection `ordinal.mk η ↪ ω`
-  back into the cardinal inequality on the underlying ordinal type, `aleph_one_not_injects_into_omega`
-  shows `aleph_one` is genuinely uncountable in the `pSet` sense, and
-  `equiv_aleph_one_of_weak_spec` packages the expected uniqueness consequence of the weak ordinal
-  specification.
+- The `AlephOne` `pSet` tranche now also has the converse non-countability step at `aleph_one`
+  itself: `mk_le_omega_of_injects_into` turns a `pSet` injection `ordinal.mk η ↪ ω` back into the
+  cardinal inequality on the underlying ordinal type, and `aleph_one_not_injects_into_omega`
+  shows `aleph_one` is genuinely uncountable in the `pSet` sense.
+- The `AlephOne` `pSet` file now also includes the repo-local uniqueness wrapper
+  `equiv_aleph_one_of_weak_spec`. Because the current `aleph_one_weak_Ord_spec` is intentionally
+  weak, this wrapper is exposed in the correct curried form: from the weak spec one obtains
+  `¬ injects_into x ω → x ≃ aleph_one`.
 - `Flypitch/SetTheory.lean` now exists and contains the first delta-system tranche from upstream:
   the core definition plus the basic preimage/image/reindexing preservation lemmas, the first
   small `Set` helper tranche (`finite_of_finite_image_of_inj_on`, `countable_of_embedding`,
@@ -279,14 +280,26 @@ Evidence-backed status:
 - That countable-product topology package now also feeds back into the original forcing-side CCC
   thread: countable products of second-countable spaces now carry the countable chain condition via
   `countable_chain_condition_pi_of_countable`.
+- The local product-topology helper block immediately before the uncountable-product CCC theorem is
+  now ported too: `extend`, `isOpenMap_apply`, `restrict_image_pi`, and `isOpenMap_restrict` are in
+  place together with upstream-style compatibility names `is_open_map_apply`,
+  `is_topological_basis_pi`, and `is_open_map_restrict`.
 
 So the real near-term blockers are now concentrated on the forcing side:
 
-1. continue the remaining `aleph_one.lean` pSet/cardinal tail and then its downstream `bSet`
-   well-ordering section;
-2. continue `set_theory.lean`, which still only contains an opening delta-system/CCC tranche.
+1. continue the downstream `aleph_one.lean` `bSet` well-ordering section once the supporting
+   `bSet` infrastructure exists in Lean 4;
+2. continue `set_theory.lean` through the missing delta-system lemma chain and the resulting
+   uncountable-product CCC theorem `countable_chain_condition_pi`.
 
 The next Lean 4 tranche should therefore come from:
 
 - `aleph_one.lean`
 - `set_theory.lean`
+
+Additional check against the original Lean 3 `src/aleph_one.lean`:
+
+- The current Lean 4 `Flypitch/AlephOne.lean` only covers the opening `pSet` section.
+- The entire downstream `bSet` well-ordering / `a1` construction from the Lean 3 file remains
+  unported, and the present repository does not yet contain the supporting `bSet` infrastructure
+  needed to continue that half of the file in-place.

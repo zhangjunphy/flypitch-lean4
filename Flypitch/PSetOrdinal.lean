@@ -1062,6 +1062,18 @@ theorem function_lift'_graph_of_mem_fun_inj {x y f : pSet.{u}} (h : is_weak_func
     function_lift_indexed h i = j :=
   function_lift_graph_of_mem_fun_inj h hinj i j hgraph
 
+theorem equiv_of_function_lift_indexed_eq {x y f : pSet.{u}} (hf : is_func x y f) (hinj : is_inj f)
+    {i₁ i₂ : x.Type} (hEq : function_lift_indexed hf.2 i₁ = function_lift_indexed hf.2 i₂) :
+    PSet.Equiv (x.Func i₁) (x.Func i₂) := by
+  have hgraph1 : pair (x.Func i₁) (y.Func (function_lift_indexed hf.2 i₁)) ∈ f :=
+    function_lift_indexed_spec hf.2 i₁
+  have hgraph2 : pair (x.Func i₂) (y.Func (function_lift_indexed hf.2 i₂)) ∈ f :=
+    function_lift_indexed_spec hf.2 i₂
+  have hEqvOut : PSet.Equiv (y.Func (function_lift_indexed hf.2 i₁))
+      (y.Func (function_lift_indexed hf.2 i₂)) := by
+    exact hEq ▸ PSet.Equiv.rfl
+  exact hinj _ _ _ _ hgraph1 hgraph2 hEqvOut
+
 theorem surj_lift {x y f : pSet.{u}} (hweak : is_weak_func x y f) (hsurj : is_surj x y f) :
     ∀ b, b ∈ y → ∃ i : x.Type, PSet.Equiv b (function_lift hweak i).1 := by
   intro b hb
