@@ -133,6 +133,803 @@ theorem mk_bounded_subset_le {α : Type u} (s : Set α) (c : Cardinal) :
 theorem le_powerlt {b c : Cardinal} (a : Cardinal) (h : c < b) : a ^ c ≤ a ^< b :=
   Cardinal.le_powerlt a h
 
+abbrev orderType (α : Type u) [LinearOrder α] [WellFoundedLT α] : Ordinal :=
+  Ordinal.type (α := α) (· < ·)
+
+/-- A well-founded linear order is a well-order for its native strict order. -/
+instance (priority := 100) isWellOrder_lt_of_linearOrder {α : Type u} [LinearOrder α] [WellFoundedLT α] :
+    IsWellOrder α (· < ·) where
+  wf := IsWellFounded.wf
+  trichotomous := fun a b hab hba => le_antisymm (not_lt.mp hba) (not_lt.mp hab)
+
+/-- For a linear order, relation-style unboundedness for `<` is the same as `IsCofinal`. -/
+theorem unbounded_lt_iff_isCofinal {α : Type u} [LinearOrder α] (s : Set α) :
+    Set.Unbounded (· < ·) s ↔ IsCofinal s := by
+  constructor
+  · intro h a
+    rcases h a with ⟨b, hb, hba⟩
+    exact ⟨b, hb, not_lt.mp hba⟩
+  · intro h a
+    rcases h a with ⟨b, hb, hle⟩
+    exact ⟨b, hb, not_lt.mpr hle⟩
+
+/-- In a well-founded linear order of regular cardinality, the order cofinality is that cardinal. -/
+theorem cof_eq_mk_of_isRegular {α : Type u} [LinearOrder α] [WellFoundedLT α]
+    (h : Cardinal.IsRegular (Cardinal.mk α))
+    (htype : Cardinal.ord (Cardinal.mk α) = orderType α) : Order.cof α = Cardinal.mk α := by
+  calc
+    Order.cof α = (orderType α).cof := by simpa [orderType] using (Ordinal.cof_type α).symm
+    _ = (Cardinal.ord (Cardinal.mk α)).cof := by rw [htype]
+    _ = Cardinal.mk α := h.cof_ord
+
+/-- A small-index union of bounded sets is bounded. Contrapositive of the Mathlib cofinality API. -/
+theorem exists_unbounded_of_unbounded_iUnion {α ι : Type u} [LinearOrder α]
+    {s : ι → Set α} (hU : Set.Unbounded (· < ·) (⋃ i, s i))
+    (hsmall : Cardinal.mk ι < Order.cof α) : ∃ i, Set.Unbounded (· < ·) (s i) := by
+  have hC : IsCofinal (⋃ i, s i) := (unbounded_lt_iff_isCofinal _).1 hU
+  rcases isCofinal_of_isCofinal_iUnion hC hsmall with ⟨i, hi⟩
+  exact ⟨i, (unbounded_lt_iff_isCofinal _).2 hi⟩
+
+/-- The first selection step in the Δ-system lemma proof: from an unbounded union of
+order-isomorphic fibers, choose a `<`-minimal parameter whose realized range is unbounded. -/
+theorem exists_minimal_unbounded_parameter {κ : Cardinal}
+    {θ : Type u} [LinearOrder θ] [WellFoundedLT θ]
+    (hκθ : κ < Cardinal.mk θ) (hθ : Cardinal.IsRegular (Cardinal.mk θ))
+    (htype : Cardinal.ord (Cardinal.mk θ) = orderType θ)
+    {ρ : Type u} [LinearOrder ρ] [WellFoundedLT ρ]
+    (hρ : Cardinal.mk ρ < κ)
+    {ι : Type u} {A : ι → Set θ}
+    (h2A : ∀ i, RelIso (· < · : ρ → ρ → Prop) (Subrel (· < · : θ → θ → Prop) (A i)))
+    (hU : Set.Unbounded (· < ·) (⋃ i, A i)) :
+    ∃ ξ : ρ,
+      Set.Unbounded (· < ·) (Set.range fun i : ι => ((h2A i) ξ).val) ∧
+        ∀ η : ρ, η < ξ → ¬ Set.Unbounded (· < ·) (Set.range fun i : ι => ((h2A i) η).val) := by
+  classical
+  let nr : ι → ρ → θ := fun i ξ => ((h2A i) ξ).val
+  have hmem (i : ι) (ξ : ρ) : nr i ξ ∈ A i := ((h2A i) ξ).2
+  have hU_eq : (⋃ i, A i) = (⋃ ξ : ρ, Set.range fun i : ι => nr i ξ) := by
+    apply Set.Subset.antisymm
+    · intro x hx
+      rcases Set.mem_iUnion.1 hx with ⟨i, hi⟩
+      refine Set.mem_iUnion.mpr ⟨(h2A i).symm ⟨x, hi⟩, ?_⟩
+      exact Set.mem_range.mpr ⟨i, by
+        simpa [nr] using congrArg Subtype.val ((h2A i).apply_symm_apply ⟨x, hi⟩)⟩
+    · intro x hx
+      rcases Set.mem_iUnion.1 hx with ⟨ξ, hξ⟩
+      rcases Set.mem_range.1 hξ with ⟨i, rfl⟩
+      exact Set.mem_iUnion.mpr ⟨i, hmem i ξ⟩
+  have hcof : Cardinal.mk ρ < Order.cof θ := by
+    rw [cof_eq_mk_of_isRegular hθ htype]
+    exact lt_trans hρ hκθ
+  have hU' : Set.Unbounded (· < ·) (⋃ ξ : ρ, Set.range fun i : ι => nr i ξ) := by
+    simpa [hU_eq] using hU
+  rcases exists_unbounded_of_unbounded_iUnion hU' hcof with ⟨ξ₀, hξ₀⟩
+  let good : Set ρ := {ξ | Set.Unbounded (· < ·) (Set.range fun i : ι => nr i ξ)}
+  have hξ₀_good : ξ₀ ∈ good := hξ₀
+  have hwf : WellFounded ((· < ·) : ρ → ρ → Prop) := IsWellFounded.wf
+  let ξ : ρ := hwf.min good ⟨ξ₀, hξ₀_good⟩
+  have hξ : ξ ∈ good := hwf.min_mem good ⟨ξ₀, hξ₀_good⟩
+  refine ⟨ξ, hξ, ?_⟩
+  intro η hη hηU
+  exact hwf.not_lt_min good hηU hη
+
+/-- Initial segments in a well-founded linear order have strictly smaller cardinality than the
+ambient regular ordinal representation. -/
+theorem mk_Iio_lt_of_ord_eq {α : Type u} [LinearOrder α] [WellFoundedLT α]
+    (x : α) (h : Cardinal.ord (Cardinal.mk α) = orderType α) :
+    Cardinal.mk (Set.Iio x) < Cardinal.mk α := by
+  simpa [orderType] using Cardinal.mk_Iio_lt x h
+
+/-- A bounded subset of a well-founded linear order has cardinality strictly below the ambient
+regular cardinal. -/
+theorem mk_lt_of_bounded {α : Type u} [LinearOrder α] [WellFoundedLT α]
+    (s : Set α) (hord : Cardinal.ord (Cardinal.mk α) = orderType α)
+    (hbdd : Set.Bounded (· < ·) s) : Cardinal.mk s < Cardinal.mk α := by
+  rcases hbdd with ⟨x, hx⟩
+  have hs : s ⊆ Set.Iio x := by
+    intro y hy
+    exact hx y hy
+  exact lt_of_le_of_lt (Cardinal.mk_le_mk_of_subset hs) (mk_Iio_lt_of_ord_eq x hord)
+
+/-- A typein-initial segment determined by an ordinal below the order type has small cardinality. -/
+theorem mk_typein_initial_segment_lt {α : Type u} [LinearOrder α] [WellFoundedLT α]
+    [IsWellOrder α (· < ·)] (hord : Cardinal.ord (Cardinal.mk α) = orderType α)
+    {o : Ordinal} (ho : o < orderType α) :
+    Cardinal.mk {x : α | Ordinal.typein (· < ·) x < o} < Cardinal.mk α := by
+  rcases Ordinal.typein_surj (· < ·) ho with ⟨a, ha⟩
+  have hsub : {x : α | Ordinal.typein (· < ·) x < o} ⊆ Set.Iio a := by
+    intro x hx
+    rw [← ha] at hx
+    exact (Ordinal.typein_lt_typein (· < ·)).1 hx
+  exact lt_of_le_of_lt (Cardinal.mk_le_mk_of_subset hsub) (mk_Iio_lt_of_ord_eq a hord)
+
+/-- The order type of a regular cardinality well-order is a successor-limit ordinal. -/
+theorem isSuccLimit_orderType_of_isRegular {α : Type u} [LinearOrder α] [WellFoundedLT α]
+    (h : Cardinal.IsRegular (Cardinal.mk α))
+    (htype : Cardinal.ord (Cardinal.mk α) = orderType α) : Order.IsSuccLimit (orderType α) := by
+  rw [← htype]
+  exact Cardinal.isSuccLimit_ord h.aleph0_le
+
+/-- A small supremum of ordinals below a regular order type is still below it. -/
+theorem iSup_lt_orderType_of_isRegular {α : Type u} {ι : Type u}
+    [LinearOrder α] [WellFoundedLT α]
+    (h : Cardinal.IsRegular (Cardinal.mk α))
+    (htype : Cardinal.ord (Cardinal.mk α) = orderType α)
+    (hι : Cardinal.mk ι < Cardinal.mk α)
+    {f : ι → Ordinal} (hf : ∀ i, f i < orderType α) :
+    iSup f < orderType α := by
+  rw [← htype]
+  exact Cardinal.iSup_lt_ord_of_isRegular h hι (fun i => by simpa [htype] using hf i)
+
+/-- A small supremum of successors of ordinals below a regular order type is still below it. -/
+theorem iSup_succ_lt_orderType_of_isRegular {α : Type u} {ι : Type u}
+    [LinearOrder α] [WellFoundedLT α]
+    (h : Cardinal.IsRegular (Cardinal.mk α))
+    (htype : Cardinal.ord (Cardinal.mk α) = orderType α)
+    (hι : Cardinal.mk ι < Cardinal.mk α)
+    {f : ι → Ordinal} (hf : ∀ i, f i < orderType α) :
+    iSup (fun i => Order.succ (f i)) < orderType α := by
+  have hlim := isSuccLimit_orderType_of_isRegular h htype
+  exact iSup_lt_orderType_of_isRegular h htype hι (fun i => hlim.succ_lt (hf i))
+
+/-- Initial segments of a well-founded linear order are small relative to any strictly larger
+cardinal. -/
+theorem mk_Iio_lt_of_lt_card {ρ : Type u} [LinearOrder ρ] [WellFoundedLT ρ]
+    (hρtype : Cardinal.ord (Cardinal.mk ρ) = orderType ρ) {c : Cardinal}
+    (hρc : Cardinal.mk ρ < c) (ξ : ρ) : Cardinal.mk (Set.Iio ξ) < c := by
+  exact lt_trans (mk_Iio_lt_of_ord_eq ξ hρtype) hρc
+
+/-- Subtype form of `mk_Iio_lt_of_lt_card`, convenient for indexing `α₀` by `{x // x < ξ}`. -/
+theorem mk_subtype_lt_of_lt_card {ρ : Type u} [LinearOrder ρ] [WellFoundedLT ρ]
+    (hρtype : Cardinal.ord (Cardinal.mk ρ) = orderType ρ) {c : Cardinal}
+    (hρc : Cardinal.mk ρ < c) (ξ : ρ) : Cardinal.mk {x : ρ // x < ξ} < c := by
+  calc
+    Cardinal.mk {x : ρ // x < ξ} = Cardinal.mk (Set.Iio ξ) := by
+      apply Cardinal.mk_congr
+      exact
+      { toFun := fun x => ⟨x.1, x.2⟩
+        invFun := fun x => ⟨x.1, x.2⟩
+        left_inv := fun _ => rfl
+        right_inv := fun _ => rfl }
+    _ < c := mk_Iio_lt_of_lt_card hρtype hρc ξ
+
+/-- Outer-supremum bound for the `α₀` construction in the Δ-system lemma. -/
+theorem iSup_Iio_lt_orderType_of_isRegular
+    {θ ρ : Type u} [LinearOrder θ] [WellFoundedLT θ] [LinearOrder ρ] [WellFoundedLT ρ]
+    (hθ : Cardinal.IsRegular (Cardinal.mk θ))
+    (hθtype : Cardinal.ord (Cardinal.mk θ) = orderType θ)
+    (hρtype : Cardinal.ord (Cardinal.mk ρ) = orderType ρ)
+    (hρθ : Cardinal.mk ρ < Cardinal.mk θ) (ξ : ρ)
+    {f : {x : ρ // x < ξ} → Ordinal} (hf : ∀ x, f x < orderType θ) :
+    iSup f < orderType θ := by
+  exact iSup_lt_orderType_of_isRegular hθ hθtype
+    (mk_subtype_lt_of_lt_card hρtype hρθ ξ) hf
+
+/-- If the range of a map into a well-founded linear order is bounded, then the supremum of
+successor type-indices of its values is below the full order type. This is the inner-bound step in
+the `α₀` construction. -/
+theorem iSup_succ_typein_range_lt_of_bounded {α ι : Type u} [LinearOrder α] [WellFoundedLT α]
+    [IsWellOrder α (· < ·)]
+    (f : ι → α) (hbdd : Set.Bounded (· < ·) (Set.range f)) :
+    iSup (fun i : ι => Order.succ (Ordinal.typein (· < ·) (f i))) < orderType α := by
+  rcases hbdd with ⟨μ, hμ⟩
+  have hle : (iSup fun i : ι => Order.succ (Ordinal.typein (· < ·) (f i))) ≤
+      Ordinal.typein (· < ·) μ := by
+    refine Ordinal.iSup_le fun i => ?_
+    rw [Order.succ_le_iff]
+    exact (Ordinal.typein_lt_typein (· < ·)).2 (hμ (f i) ⟨i, rfl⟩)
+  exact lt_of_le_of_lt hle (by simpa [orderType] using Ordinal.typein_lt_type (· < ·) μ)
+
+/-- Inner-bound step specialized to a minimal unbounded parameter: every parameter below it has a
+bounded realized range, hence a bounded successor-type-index supremum. -/
+theorem inner_iSup_lt_of_minimal_unbounded_parameter
+    {θ ρ ι : Type u} [LinearOrder θ] [WellFoundedLT θ] [IsWellOrder θ (· < ·)] [LinearOrder ρ]
+    [WellFoundedLT ρ]
+    (nr : ι → ρ → θ) {ξ : ρ}
+    (hmin : ∀ η : ρ, η < ξ → ¬ Set.Unbounded (· < ·) (Set.range fun i : ι => nr i η))
+    (η : {x : ρ // x < ξ}) :
+    iSup (fun i : ι => Order.succ (Ordinal.typein (· < ·) (nr i η.1))) < orderType θ := by
+  have hbdd : Set.Bounded (· < ·) (Set.range fun i : ι => nr i η.1) := by
+    exact (not_unbounded_iff (s := Set.range fun i : ι => nr i η.1)).1 (hmin η.1 η.2)
+  exact iSup_succ_typein_range_lt_of_bounded (fun i : ι => nr i η.1) hbdd
+
+/-- The full `α₀` bound from the Δ-system lemma proof, assembled from the inner and outer helper
+tranches. -/
+theorem alpha0_lt_orderType_of_minimal_unbounded_parameter
+    {θ ρ ι : Type u} [LinearOrder θ] [WellFoundedLT θ] [IsWellOrder θ (· < ·)]
+    [LinearOrder ρ] [WellFoundedLT ρ]
+    (hθ : Cardinal.IsRegular (Cardinal.mk θ))
+    (hθtype : Cardinal.ord (Cardinal.mk θ) = orderType θ)
+    (hρtype : Cardinal.ord (Cardinal.mk ρ) = orderType ρ)
+    (hρθ : Cardinal.mk ρ < Cardinal.mk θ)
+    (nr : ι → ρ → θ) {ξ : ρ}
+    (hmin : ∀ η : ρ, η < ξ → ¬ Set.Unbounded (· < ·) (Set.range fun i : ι => nr i η)) :
+    (iSup fun η : {x : ρ // x < ξ} =>
+      iSup fun i : ι => Order.succ (Ordinal.typein (· < ·) (nr i η.1))) < orderType θ := by
+  apply iSup_Iio_lt_orderType_of_isRegular hθ hθtype hρtype hρθ ξ
+  intro η
+  exact inner_iSup_lt_of_minimal_unbounded_parameter nr hmin η
+
+/-- Packaged opening of `delta_system_lemma_2`: choose the minimal unbounded parameter and prove the
+associated `α₀` double supremum is below the ambient order type. -/
+theorem exists_minimal_parameter_with_alpha0_bound {κ : Cardinal}
+    {θ : Type u} [LinearOrder θ] [WellFoundedLT θ] [IsWellOrder θ (· < ·)]
+    (hκθ : κ < Cardinal.mk θ) (hθ : Cardinal.IsRegular (Cardinal.mk θ))
+    (hθtype : Cardinal.ord (Cardinal.mk θ) = orderType θ)
+    {ρ : Type u} [LinearOrder ρ] [WellFoundedLT ρ]
+    (hρtype : Cardinal.ord (Cardinal.mk ρ) = orderType ρ)
+    (hρ : Cardinal.mk ρ < κ)
+    {ι : Type u} {A : ι → Set θ}
+    (h2A : ∀ i, RelIso (· < · : ρ → ρ → Prop) (Subrel (· < · : θ → θ → Prop) (A i)))
+    (hU : Set.Unbounded (· < ·) (⋃ i, A i)) :
+    ∃ ξ : ρ,
+      Set.Unbounded (· < ·) (Set.range fun i : ι => ((h2A i) ξ).val) ∧
+      (∀ η : ρ, η < ξ →
+        ¬ Set.Unbounded (· < ·) (Set.range fun i : ι => ((h2A i) η).val)) ∧
+      (iSup fun η : {x : ρ // x < ξ} =>
+        iSup fun i : ι => Order.succ (Ordinal.typein (· < ·) ((h2A i) η.1).val)) <
+          orderType θ := by
+  rcases exists_minimal_unbounded_parameter hκθ hθ hθtype hρ h2A hU with ⟨ξ, hξU, hξmin⟩
+  refine ⟨ξ, hξU, hξmin, ?_⟩
+  exact alpha0_lt_orderType_of_minimal_unbounded_parameter hθ hθtype hρtype
+    (lt_trans hρ hκθ) (fun i ξ => ((h2A i) ξ).val) hξmin
+
+/-- Packaged opening of `delta_system_lemma_2` through the smallness of the typein-initial
+segment determined by the constructed `α₀`. -/
+theorem exists_minimal_parameter_with_small_alpha0_segment {κ : Cardinal}
+    {θ : Type u} [LinearOrder θ] [WellFoundedLT θ] [IsWellOrder θ (· < ·)]
+    (hκθ : κ < Cardinal.mk θ) (hθ : Cardinal.IsRegular (Cardinal.mk θ))
+    (hθtype : Cardinal.ord (Cardinal.mk θ) = orderType θ)
+    {ρ : Type u} [LinearOrder ρ] [WellFoundedLT ρ]
+    (hρtype : Cardinal.ord (Cardinal.mk ρ) = orderType ρ)
+    (hρ : Cardinal.mk ρ < κ)
+    {ι : Type u} {A : ι → Set θ}
+    (h2A : ∀ i, RelIso (· < · : ρ → ρ → Prop) (Subrel (· < · : θ → θ → Prop) (A i)))
+    (hU : Set.Unbounded (· < ·) (⋃ i, A i)) :
+    ∃ ξ : ρ,
+      Set.Unbounded (· < ·) (Set.range fun i : ι => ((h2A i) ξ).val) ∧
+      (∀ η : ρ, η < ξ →
+        ¬ Set.Unbounded (· < ·) (Set.range fun i : ι => ((h2A i) η).val)) ∧
+      Cardinal.mk
+        {x : θ |
+          Ordinal.typein (· < ·) x <
+            iSup fun η : {x : ρ // x < ξ} =>
+              iSup fun i : ι => Order.succ (Ordinal.typein (· < ·) ((h2A i) η.1).val)} <
+        Cardinal.mk θ := by
+  rcases exists_minimal_parameter_with_alpha0_bound hκθ hθ hθtype hρtype hρ h2A hU with
+    ⟨ξ, hξU, hξmin, hα⟩
+  exact ⟨ξ, hξU, hξmin, mk_typein_initial_segment_lt hθtype hα⟩
+
+/-- A successor-limit order type gives arbitrarily large elements in the underlying well-order. -/
+theorem exists_gt_of_isSuccLimit_orderType {α : Type u} [LinearOrder α] [WellFoundedLT α]
+    [IsWellOrder α (· < ·)] (hlim : Order.IsSuccLimit (orderType α)) (x : α) :
+    ∃ y : α, x < y := by
+  have hx : Ordinal.typein (· < ·) x < orderType α := by
+    simpa [orderType] using Ordinal.typein_lt_type (· < ·) x
+  have hsx : Order.succ (Ordinal.typein (· < ·) x) < orderType α := hlim.succ_lt hx
+  rcases Ordinal.typein_surj (· < ·) hsx with ⟨y, hy⟩
+  refine ⟨y, ?_⟩
+  rw [← Ordinal.typein_lt_typein (· < ·)]
+  rw [hy]
+  exact Order.lt_succ _
+
+/-- An unbounded range in a successor-limit well-order strictly dominates every point. -/
+theorem exists_range_gt_of_unbounded {α ι : Type u} [LinearOrder α] [WellFoundedLT α]
+    [IsWellOrder α (· < ·)] (hlim : Order.IsSuccLimit (orderType α)) (f : ι → α)
+    (hU : Set.Unbounded (· < ·) (Set.range f)) (x : α) : ∃ i : ι, x < f i := by
+  rcases exists_gt_of_isSuccLimit_orderType hlim x with ⟨y, hxy⟩
+  rcases hU y with ⟨z, hz, hzy⟩
+  rcases hz with ⟨i, rfl⟩
+  have hyz : y ≤ f i := not_lt.mp hzy
+  exact ⟨i, lt_of_lt_of_le hxy hyz⟩
+
+/-- Rephrase unboundedness of a range as the ability to dominate any ordinal bound below the full
+order type. This is the selection step used in the recursive `pick` construction. -/
+theorem exists_index_above_ordinal_of_unbounded
+    {α ι : Type u} [LinearOrder α] [WellFoundedLT α] [IsWellOrder α (· < ·)]
+    (hlim : Order.IsSuccLimit (orderType α)) (f : ι → α)
+    (hU : Set.Unbounded (· < ·) (Set.range f)) {o : Ordinal} (ho : o < orderType α) :
+    ∃ i : ι, Ordinal.enum (· < ·) ⟨o, ho⟩ < f i := by
+  let x : α := Ordinal.enum (· < ·) ⟨o, ho⟩
+  rcases exists_range_gt_of_unbounded hlim f hU x with ⟨i, hi⟩
+  exact ⟨i, hi⟩
+
+/-- A choice function version of `exists_index_above_ordinal_of_unbounded`. -/
+noncomputable def choose_index_above_ordinal_of_unbounded
+    {α ι : Type u} [LinearOrder α] [WellFoundedLT α] [IsWellOrder α (· < ·)]
+    (hlim : Order.IsSuccLimit (orderType α)) (f : ι → α)
+    (hU : Set.Unbounded (· < ·) (Set.range f)) {o : Ordinal} (ho : o < orderType α) : ι :=
+  Classical.choose (exists_index_above_ordinal_of_unbounded hlim f hU ho)
+
+theorem choose_index_above_ordinal_of_unbounded_spec
+    {α ι : Type u} [LinearOrder α] [WellFoundedLT α] [IsWellOrder α (· < ·)]
+    (hlim : Order.IsSuccLimit (orderType α)) (f : ι → α)
+    (hU : Set.Unbounded (· < ·) (Set.range f)) {o : Ordinal} (ho : o < orderType α) :
+    Ordinal.enum (· < ·) ⟨o, ho⟩ <
+      f (choose_index_above_ordinal_of_unbounded hlim f hU ho) :=
+  Classical.choose_spec (exists_index_above_ordinal_of_unbounded hlim f hU ho)
+
+/-- Recursive choice of indices whose realized values stay above the ordinal bound determined by
+all previously chosen values, under the regularity hypotheses used in the Δ-system proof. -/
+noncomputable def pickAboveOrdinalRec
+    {α ι : Type u} [LinearOrder α] [WellFoundedLT α] [IsWellOrder α (· < ·)]
+    (hreg : Cardinal.IsRegular (Cardinal.mk α))
+    (hord : Cardinal.ord (Cardinal.mk α) = orderType α)
+    (hlim : Order.IsSuccLimit (orderType α)) (f : ι → α)
+    (hU : Set.Unbounded (· < ·) (Set.range f)) : α → ι :=
+  WellFounded.fix (r := (· < ·)) IsWellFounded.wf fun x rec =>
+    let o : Ordinal :=
+      iSup (fun y : {y : α // y < x} => Ordinal.typein (· < ·) (f (rec y.1 y.2)))
+    let ho : o < orderType α := by
+      apply iSup_lt_orderType_of_isRegular hreg hord (mk_Iio_lt_of_ord_eq x hord)
+      intro y
+      simpa [orderType] using Ordinal.typein_lt_type (· < ·) (f (rec y.1 y.2))
+    choose_index_above_ordinal_of_unbounded hlim f hU ho
+
+theorem pickAboveOrdinalRec_eq
+    {α ι : Type u} [LinearOrder α] [WellFoundedLT α] [IsWellOrder α (· < ·)]
+    (hreg : Cardinal.IsRegular (Cardinal.mk α))
+    (hord : Cardinal.ord (Cardinal.mk α) = orderType α)
+    (hlim : Order.IsSuccLimit (orderType α)) (f : ι → α)
+    (hU : Set.Unbounded (· < ·) (Set.range f)) (x : α) :
+    pickAboveOrdinalRec hreg hord hlim f hU x =
+      let o : Ordinal :=
+        iSup (fun y : {y : α // y < x} =>
+          Ordinal.typein (· < ·) (f (pickAboveOrdinalRec hreg hord hlim f hU y.1)))
+      let ho : o < orderType α := by
+        apply iSup_lt_orderType_of_isRegular hreg hord (mk_Iio_lt_of_ord_eq x hord)
+        intro y
+        simpa [orderType] using Ordinal.typein_lt_type (· < ·)
+          (f (pickAboveOrdinalRec hreg hord hlim f hU y.1))
+      choose_index_above_ordinal_of_unbounded hlim f hU ho := by
+  rw [pickAboveOrdinalRec, WellFounded.fix_eq]
+
+theorem typein_lt_pickAboveOrdinalRec
+    {α ι : Type u} [LinearOrder α] [WellFoundedLT α] [IsWellOrder α (· < ·)]
+    (hreg : Cardinal.IsRegular (Cardinal.mk α))
+    (hord : Cardinal.ord (Cardinal.mk α) = orderType α)
+    (hlim : Order.IsSuccLimit (orderType α)) (f : ι → α)
+    (hU : Set.Unbounded (· < ·) (Set.range f)) {x y : α} (hyx : y < x) :
+    Ordinal.typein (· < ·) (f (pickAboveOrdinalRec hreg hord hlim f hU y)) <
+      Ordinal.typein (· < ·) (f (pickAboveOrdinalRec hreg hord hlim f hU x)) := by
+  rw [pickAboveOrdinalRec_eq hreg hord hlim f hU x]
+  let o := iSup (fun z : {z : α // z < x} =>
+    Ordinal.typein (· < ·) (f (pickAboveOrdinalRec hreg hord hlim f hU z.1)))
+  have ho : o < orderType α := by
+    apply iSup_lt_orderType_of_isRegular hreg hord (mk_Iio_lt_of_ord_eq x hord)
+    intro z
+    simpa [orderType] using Ordinal.typein_lt_type (· < ·)
+      (f (pickAboveOrdinalRec hreg hord hlim f hU z.1))
+  have hchosen : Ordinal.enum (· < ·) ⟨o, ho⟩ <
+      f (choose_index_above_ordinal_of_unbounded hlim f hU ho) :=
+    choose_index_above_ordinal_of_unbounded_spec hlim f hU ho
+  have hchosen' : o < Ordinal.typein (· < ·)
+      (f (choose_index_above_ordinal_of_unbounded hlim f hU ho)) := by
+    simpa [Ordinal.typein_enum] using
+      (Ordinal.typein_lt_typein (· < ·)).2 hchosen
+  have hle : Ordinal.typein (· < ·) (f (pickAboveOrdinalRec hreg hord hlim f hU y)) ≤ o := by
+    dsimp [o]
+    exact Ordinal.le_iSup (fun z : {z : α // z < x} =>
+      Ordinal.typein (· < ·) (f (pickAboveOrdinalRec hreg hord hlim f hU z.1))) ⟨y, hyx⟩
+  simpa using lt_of_le_of_lt hle hchosen'
+
+theorem strictMono_pickAboveOrdinalRec_values
+    {α ι : Type u} [LinearOrder α] [WellFoundedLT α] [IsWellOrder α (· < ·)]
+    (hreg : Cardinal.IsRegular (Cardinal.mk α))
+    (hord : Cardinal.ord (Cardinal.mk α) = orderType α)
+    (hlim : Order.IsSuccLimit (orderType α)) (f : ι → α)
+    (hU : Set.Unbounded (· < ·) (Set.range f)) :
+    StrictMono fun x : α => f (pickAboveOrdinalRec hreg hord hlim f hU x) := by
+  intro x y hxy
+  exact (Ordinal.typein_lt_typein (· < ·)).1 <|
+    typein_lt_pickAboveOrdinalRec hreg hord hlim f hU hxy
+
+/-- The recursive picked values have full cardinality. -/
+theorem mk_range_pickAboveOrdinalRec_eq
+    {α ι : Type u} [LinearOrder α] [WellFoundedLT α] [IsWellOrder α (· < ·)]
+    (hreg : Cardinal.IsRegular (Cardinal.mk α))
+    (hord : Cardinal.ord (Cardinal.mk α) = orderType α)
+    (hlim : Order.IsSuccLimit (orderType α)) (f : ι → α)
+    (hU : Set.Unbounded (· < ·) (Set.range f)) :
+    Cardinal.mk (Set.range fun x : α => f (pickAboveOrdinalRec hreg hord hlim f hU x)) =
+      Cardinal.mk α := by
+  apply Cardinal.mk_range_eq
+  exact (strictMono_pickAboveOrdinalRec_values hreg hord hlim f hU).injective
+
+/-- The range of recursively picked indices has full cardinality. -/
+theorem mk_range_picked_indices_eq
+    {α ι : Type u} [LinearOrder α] [WellFoundedLT α] [IsWellOrder α (· < ·)]
+    (hreg : Cardinal.IsRegular (Cardinal.mk α))
+    (hord : Cardinal.ord (Cardinal.mk α) = orderType α)
+    (hlim : Order.IsSuccLimit (orderType α)) (f : ι → α)
+    (hU : Set.Unbounded (· < ·) (Set.range f)) :
+    Cardinal.mk (Set.range fun x : α => pickAboveOrdinalRec hreg hord hlim f hU x) =
+      Cardinal.mk α := by
+  apply Cardinal.mk_range_eq
+  intro x y hxy
+  apply (strictMono_pickAboveOrdinalRec_values hreg hord hlim f hU).injective
+  exact congrArg f hxy
+
+/-- Recursive choice of indices for the actual Δ-system proof: at stage `x`, choose an index whose
+distinguished coordinate `ξ₀` lies above both the fixed base bound and every previously chosen
+coordinate value. -/
+noncomputable def pickParamAboveOrdinalRec
+    {α σ ι : Type u} [LinearOrder α] [WellFoundedLT α] [IsWellOrder α (· < ·)]
+    (hreg : Cardinal.IsRegular (Cardinal.mk α))
+    (hord : Cardinal.ord (Cardinal.mk α) = orderType α)
+    (hlim : Order.IsSuccLimit (orderType α)) (hσ : Cardinal.mk σ < Cardinal.mk α)
+    (g : ι → σ → α) (ξ₀ : σ)
+    (hU : Set.Unbounded (· < ·) (Set.range fun i : ι => g i ξ₀))
+    {base : Ordinal} (hbase : base < orderType α) : α → ι :=
+  WellFounded.fix (r := (· < ·)) IsWellFounded.wf fun x rec =>
+    let o : Ordinal :=
+      max base <| iSup fun p : σ × {y : α // y < x} =>
+        Ordinal.typein (· < ·) (g (rec p.2.1 p.2.2) p.1)
+    let ho : o < orderType α := by
+      apply max_lt hbase
+      apply iSup_lt_orderType_of_isRegular hreg hord
+      · simpa [Cardinal.mk_prod] using
+          Cardinal.mul_lt_of_lt hreg.aleph0_le hσ (mk_Iio_lt_of_ord_eq x hord)
+      · intro p
+        simpa [orderType] using Ordinal.typein_lt_type (· < ·) (g (rec p.2.1 p.2.2) p.1)
+    choose_index_above_ordinal_of_unbounded hlim (fun i : ι => g i ξ₀) hU ho
+
+theorem pickParamAboveOrdinalRec_eq
+    {α σ ι : Type u} [LinearOrder α] [WellFoundedLT α] [IsWellOrder α (· < ·)]
+    (hreg : Cardinal.IsRegular (Cardinal.mk α))
+    (hord : Cardinal.ord (Cardinal.mk α) = orderType α)
+    (hlim : Order.IsSuccLimit (orderType α)) (hσ : Cardinal.mk σ < Cardinal.mk α)
+    (g : ι → σ → α) (ξ₀ : σ)
+    (hU : Set.Unbounded (· < ·) (Set.range fun i : ι => g i ξ₀))
+    {base : Ordinal} (hbase : base < orderType α) (x : α) :
+    pickParamAboveOrdinalRec hreg hord hlim hσ g ξ₀ hU hbase x =
+      let o : Ordinal :=
+        max base <| iSup fun p : σ × {y : α // y < x} =>
+          Ordinal.typein (· < ·)
+            (g (pickParamAboveOrdinalRec hreg hord hlim hσ g ξ₀ hU hbase p.2.1) p.1)
+      let ho : o < orderType α := by
+        apply max_lt hbase
+        apply iSup_lt_orderType_of_isRegular hreg hord
+        · simpa [Cardinal.mk_prod] using
+            Cardinal.mul_lt_of_lt hreg.aleph0_le hσ (mk_Iio_lt_of_ord_eq x hord)
+        · intro p
+          simpa [orderType] using Ordinal.typein_lt_type (· < ·)
+            (g (pickParamAboveOrdinalRec hreg hord hlim hσ g ξ₀ hU hbase p.2.1) p.1)
+      choose_index_above_ordinal_of_unbounded hlim (fun i : ι => g i ξ₀) hU ho := by
+  rw [pickParamAboveOrdinalRec, WellFounded.fix_eq]
+
+theorem base_lt_pickParamAboveOrdinalRec
+    {α σ ι : Type u} [LinearOrder α] [WellFoundedLT α] [IsWellOrder α (· < ·)]
+    (hreg : Cardinal.IsRegular (Cardinal.mk α))
+    (hord : Cardinal.ord (Cardinal.mk α) = orderType α)
+    (hlim : Order.IsSuccLimit (orderType α)) (hσ : Cardinal.mk σ < Cardinal.mk α)
+    (g : ι → σ → α) (ξ₀ : σ)
+    (hU : Set.Unbounded (· < ·) (Set.range fun i : ι => g i ξ₀))
+    {base : Ordinal} (hbase : base < orderType α) (x : α) :
+    base < Ordinal.typein (· < ·)
+      (g (pickParamAboveOrdinalRec hreg hord hlim hσ g ξ₀ hU hbase x) ξ₀) := by
+  rw [pickParamAboveOrdinalRec_eq hreg hord hlim hσ g ξ₀ hU hbase x]
+  let o : Ordinal := max base <| iSup fun p : σ × {y : α // y < x} =>
+    Ordinal.typein (· < ·)
+      (g (pickParamAboveOrdinalRec hreg hord hlim hσ g ξ₀ hU hbase p.2.1) p.1)
+  have ho : o < orderType α := by
+    dsimp [o]
+    apply max_lt hbase
+    apply iSup_lt_orderType_of_isRegular hreg hord
+    · simpa [Cardinal.mk_prod] using
+        Cardinal.mul_lt_of_lt hreg.aleph0_le hσ (mk_Iio_lt_of_ord_eq x hord)
+    · intro p
+      simpa [orderType] using Ordinal.typein_lt_type (· < ·)
+        (g (pickParamAboveOrdinalRec hreg hord hlim hσ g ξ₀ hU hbase p.2.1) p.1)
+  have hchosen : Ordinal.enum (· < ·) ⟨o, ho⟩ <
+      g (choose_index_above_ordinal_of_unbounded hlim (fun i : ι => g i ξ₀) hU ho) ξ₀ :=
+    choose_index_above_ordinal_of_unbounded_spec hlim (fun i : ι => g i ξ₀) hU ho
+  have hchosen' : o < Ordinal.typein (· < ·)
+      (g (choose_index_above_ordinal_of_unbounded hlim (fun i : ι => g i ξ₀) hU ho) ξ₀) := by
+    simpa [Ordinal.typein_enum] using (Ordinal.typein_lt_typein (· < ·)).2 hchosen
+  exact lt_of_le_of_lt (le_max_left _ _) hchosen'
+
+theorem typein_param_lt_pickParamAboveOrdinalRec
+    {α σ ι : Type u} [LinearOrder α] [WellFoundedLT α] [IsWellOrder α (· < ·)]
+    (hreg : Cardinal.IsRegular (Cardinal.mk α))
+    (hord : Cardinal.ord (Cardinal.mk α) = orderType α)
+    (hlim : Order.IsSuccLimit (orderType α)) (hσ : Cardinal.mk σ < Cardinal.mk α)
+    (g : ι → σ → α) (ξ₀ : σ)
+    (hU : Set.Unbounded (· < ·) (Set.range fun i : ι => g i ξ₀))
+    {base : Ordinal} (hbase : base < orderType α) {x y : α} (hyx : y < x) (η : σ) :
+    Ordinal.typein (· < ·)
+        (g (pickParamAboveOrdinalRec hreg hord hlim hσ g ξ₀ hU hbase y) η) <
+      Ordinal.typein (· < ·)
+        (g (pickParamAboveOrdinalRec hreg hord hlim hσ g ξ₀ hU hbase x) ξ₀) := by
+  rw [pickParamAboveOrdinalRec_eq hreg hord hlim hσ g ξ₀ hU hbase x]
+  let o : Ordinal := max base <| iSup fun p : σ × {y : α // y < x} =>
+    Ordinal.typein (· < ·)
+      (g (pickParamAboveOrdinalRec hreg hord hlim hσ g ξ₀ hU hbase p.2.1) p.1)
+  have ho : o < orderType α := by
+    dsimp [o]
+    apply max_lt hbase
+    apply iSup_lt_orderType_of_isRegular hreg hord
+    · simpa [Cardinal.mk_prod] using
+        Cardinal.mul_lt_of_lt hreg.aleph0_le hσ (mk_Iio_lt_of_ord_eq x hord)
+    · intro p
+      simpa [orderType] using Ordinal.typein_lt_type (· < ·)
+        (g (pickParamAboveOrdinalRec hreg hord hlim hσ g ξ₀ hU hbase p.2.1) p.1)
+  have hchosen : Ordinal.enum (· < ·) ⟨o, ho⟩ <
+      g (choose_index_above_ordinal_of_unbounded hlim (fun i : ι => g i ξ₀) hU ho) ξ₀ :=
+    choose_index_above_ordinal_of_unbounded_spec hlim (fun i : ι => g i ξ₀) hU ho
+  have hchosen' : o < Ordinal.typein (· < ·)
+      (g (choose_index_above_ordinal_of_unbounded hlim (fun i : ι => g i ξ₀) hU ho) ξ₀) := by
+    simpa [Ordinal.typein_enum] using (Ordinal.typein_lt_typein (· < ·)).2 hchosen
+  have hle : Ordinal.typein (· < ·)
+      (g (pickParamAboveOrdinalRec hreg hord hlim hσ g ξ₀ hU hbase y) η) ≤ o := by
+    dsimp [o]
+    refine le_trans ?_ (le_max_right _ _)
+    exact Ordinal.le_iSup (fun p : σ × {y : α // y < x} =>
+      Ordinal.typein (· < ·)
+        (g (pickParamAboveOrdinalRec hreg hord hlim hσ g ξ₀ hU hbase p.2.1) p.1))
+      (η, ⟨y, hyx⟩)
+  simpa using lt_of_le_of_lt hle hchosen'
+
+/-- Membership in the `η < ξ₀` part of the `α₀` supremum gives a strict type-index bound. -/
+theorem typein_lt_alpha0_of_param_lt
+    {α σ ι : Type u} [LinearOrder α] [WellFoundedLT α] [IsWellOrder α (· < ·)]
+    [LinearOrder σ] (g : ι → σ → α) {ξ₀ η : σ} (hη : η < ξ₀) (i : ι) :
+    Ordinal.typein (· < ·) (g i η) <
+      iSup (fun η' : {x : σ // x < ξ₀} =>
+        iSup fun j : ι => Order.succ (Ordinal.typein (· < ·) (g j η'.1))) := by
+  refine lt_of_lt_of_le (Order.lt_succ _) ?_
+  refine le_trans ?_ (Ordinal.le_iSup (fun η' : {x : σ // x < ξ₀} =>
+    iSup fun j : ι => Order.succ (Ordinal.typein (· < ·) (g j η'.1))) ⟨η, hη⟩)
+  exact Ordinal.le_iSup (fun j : ι => Order.succ (Ordinal.typein (· < ·) (g j η))) i
+
+/-- If a value is in a member `A i`, then the inverse image of that value under the rel-isomorphism
+has type-index at least `ξ₀` exactly when it is not below `ξ₀`. -/
+theorem not_lt_of_typein_ge_typein
+    {σ : Type u} [LinearOrder σ] [WellFoundedLT σ] [IsWellOrder σ (· < ·)]
+    {η ξ₀ : σ} (hη : ¬ Ordinal.typein (· < ·) η < Ordinal.typein (· < ·) ξ₀) :
+    ¬ η < ξ₀ := by
+  intro hlt
+  exact hη ((Ordinal.typein_lt_typein (· < ·)).2 hlt)
+
+/-- A rel-isomorphism to a picked set turns the parameterized pick inequality into a strict
+comparison in the parameter order. This is the contradiction branch in the intersection proof. -/
+theorem param_lt_of_mem_and_pick_bound
+    {α σ ι : Type u} [LinearOrder α] [WellFoundedLT α] [IsWellOrder α (· < ·)]
+    [LinearOrder σ] [WellFoundedLT σ] [IsWellOrder σ (· < ·)]
+    {A : ι → Set α}
+    (hA : ∀ i, RelIso (· < · : σ → σ → Prop) (Subrel (· < · : α → α → Prop) (A i)))
+    {j : ι} {z : α} (hzj : z ∈ A j) {ξ₀ : σ}
+    (hbound : z < ((hA j) ξ₀).val) : (hA j).symm ⟨z, hzj⟩ < ξ₀ := by
+  have hrel : Subrel (· < · : α → α → Prop) (A j) ⟨z, hzj⟩ ((hA j) ξ₀) := by
+    simpa [Subrel] using hbound
+  simpa using ((hA j).symm_apply_rel).2 hrel
+
+/-- Pairwise intersections of the parameterized picked family lie in the `α₀` initial segment. -/
+theorem picked_inter_subset_alpha0
+    {α σ ι : Type u} [LinearOrder α] [WellFoundedLT α] [IsWellOrder α (· < ·)]
+    [LinearOrder σ] [WellFoundedLT σ] [IsWellOrder σ (· < ·)]
+    (hreg : Cardinal.IsRegular (Cardinal.mk α))
+    (hord : Cardinal.ord (Cardinal.mk α) = orderType α)
+    (hlim : Order.IsSuccLimit (orderType α)) (hσ : Cardinal.mk σ < Cardinal.mk α)
+    {A : ι → Set α}
+    (hA : ∀ i, RelIso (· < · : σ → σ → Prop) (Subrel (· < · : α → α → Prop) (A i)))
+    (ξ₀ : σ)
+    (hU : Set.Unbounded (· < ·) (Set.range fun i : ι => ((hA i) ξ₀).val))
+    {base : Ordinal}
+    (hbase_eq : base =
+      iSup (fun η : {x : σ // x < ξ₀} =>
+        iSup fun i : ι => Order.succ (Ordinal.typein (· < ·) ((hA i) η.1).val)))
+    (hbase : base < orderType α) {x y : α} (hxy : x < y) :
+    A (pickParamAboveOrdinalRec hreg hord hlim hσ (fun i η => ((hA i) η).val) ξ₀ hU hbase x) ∩
+        A (pickParamAboveOrdinalRec hreg hord hlim hσ (fun i η => ((hA i) η).val) ξ₀ hU hbase y) ⊆
+      {z : α | Ordinal.typein (· < ·) z < base} := by
+  intro z hz
+  let pick := pickParamAboveOrdinalRec hreg hord hlim hσ (fun i η => ((hA i) η).val) ξ₀ hU hbase
+  let ηy : σ := (hA (pick y)).symm ⟨z, hz.2⟩
+  have hz_eq_y : z = ((hA (pick y)) ηy).val := by
+    dsimp [ηy]
+    exact congrArg Subtype.val ((hA (pick y)).apply_symm_apply ⟨z, hz.2⟩).symm
+  by_cases hη : ηy < ξ₀
+  · rw [hbase_eq, hz_eq_y]
+    exact typein_lt_alpha0_of_param_lt (fun i η => ((hA i) η).val) hη (pick y)
+  · have hlt_typein : Ordinal.typein (· < ·) z <
+        Ordinal.typein (· < ·) (((hA (pick y)) ξ₀).val) := by
+      let ηx : σ := (hA (pick x)).symm ⟨z, hz.1⟩
+      have hx_eq : z = ((hA (pick x)) ηx).val := by
+        dsimp [ηx]
+        exact congrArg Subtype.val ((hA (pick x)).apply_symm_apply ⟨z, hz.1⟩).symm
+      have hpick := typein_param_lt_pickParamAboveOrdinalRec hreg hord hlim hσ
+        (fun i η => ((hA i) η).val) ξ₀ hU hbase hxy ηx
+      rw [hx_eq]
+      simpa [pick] using hpick
+    have hlt : z < ((hA (pick y)) ξ₀).val :=
+      (Ordinal.typein_lt_typein (· < ·)).1 hlt_typein
+    have hηlt : ηy < ξ₀ := param_lt_of_mem_and_pick_bound hA hz.2 hlt
+    exact False.elim (hη hηlt)
+
+/-- Each picked member has only `#σ` many points below the `α₀` initial segment. This is the
+bounded-codomain estimate used before applying infinite pigeonhole. -/
+theorem picked_alpha0_inter_mk_le
+    {α σ ι : Type u} [LinearOrder α] [WellFoundedLT α] [IsWellOrder α (· < ·)]
+    [LinearOrder σ] [WellFoundedLT σ] [IsWellOrder σ (· < ·)]
+    (hreg : Cardinal.IsRegular (Cardinal.mk α))
+    (hord : Cardinal.ord (Cardinal.mk α) = orderType α)
+    (hlim : Order.IsSuccLimit (orderType α)) (hσ : Cardinal.mk σ < Cardinal.mk α)
+    {A : ι → Set α}
+    (hA : ∀ i, RelIso (· < · : σ → σ → Prop) (Subrel (· < · : α → α → Prop) (A i)))
+    (ξ₀ : σ)
+    (hU : Set.Unbounded (· < ·) (Set.range fun i : ι => ((hA i) ξ₀).val))
+    {base : Ordinal} (hbase : base < orderType α) (x : α) :
+    Cardinal.mk
+        ((A (pickParamAboveOrdinalRec hreg hord hlim hσ (fun i η => ((hA i) η).val) ξ₀ hU hbase x) ∩
+          {z : α | Ordinal.typein (· < ·) z < base}) : Set α) ≤
+      Cardinal.mk σ := by
+  let pick := pickParamAboveOrdinalRec hreg hord hlim hσ (fun i η => ((hA i) η).val) ξ₀ hU hbase
+  let s : Set α := A (pick x) ∩ {z : α | Ordinal.typein (· < ·) z < base}
+  have hbase_lt := base_lt_pickParamAboveOrdinalRec hreg hord hlim hσ
+    (fun i η => ((hA i) η).val) ξ₀ hU hbase x
+  let e : s ↪ {η : σ // η < ξ₀} :=
+    { toFun := fun z =>
+        let η : σ := (hA (pick x)).symm ⟨z.1, z.2.1⟩
+        ⟨η, by
+          have hzt : Ordinal.typein (· < ·) z.1 <
+              Ordinal.typein (· < ·) (((hA (pick x)) ξ₀).val) :=
+            lt_trans z.2.2 hbase_lt
+          have hzlt : z.1 < ((hA (pick x)) ξ₀).val :=
+            (Ordinal.typein_lt_typein (· < ·)).1 hzt
+          exact param_lt_of_mem_and_pick_bound hA z.2.1 hzlt⟩
+      inj' := by
+        intro z w hzw
+        apply Subtype.ext
+        have hη : (hA (pick x)).symm ⟨z.1, z.2.1⟩ = (hA (pick x)).symm ⟨w.1, w.2.1⟩ :=
+          Subtype.ext_iff.mp hzw
+        have happ := congrArg (fun η => ((hA (pick x)) η).val) hη
+        simpa [pick] using happ }
+  calc
+    Cardinal.mk ((A (pickParamAboveOrdinalRec hreg hord hlim hσ
+        (fun i η => ((hA i) η).val) ξ₀ hU hbase x) ∩
+          {z : α | Ordinal.typein (· < ·) z < base}) : Set α) = Cardinal.mk s := by rfl
+    _ ≤ Cardinal.mk {η : σ // η < ξ₀} := ⟨e⟩
+    _ ≤ Cardinal.mk σ := Cardinal.mk_subtype_le _
+
+/-- Infinite pigeonhole applied to the colors `x ↦ A (pick x) ∩ sub_α₀`. This produces a
+full-cardinality set of stages on which the intersection with the small initial segment is constant. -/
+theorem exists_large_constant_picked_alpha0_inter
+    {α σ ι : Type u} [LinearOrder α] [WellFoundedLT α] [IsWellOrder α (· < ·)]
+    [LinearOrder σ] [WellFoundedLT σ] [IsWellOrder σ (· < ·)]
+    (hreg : Cardinal.IsRegular (Cardinal.mk α))
+    (hord : Cardinal.ord (Cardinal.mk α) = orderType α)
+    (hlim : Order.IsSuccLimit (orderType α)) (hσ : Cardinal.mk σ < Cardinal.mk α)
+    {A : ι → Set α}
+    (hA : ∀ i, RelIso (· < · : σ → σ → Prop) (Subrel (· < · : α → α → Prop) (A i)))
+    (ξ₀ : σ)
+    (hU : Set.Unbounded (· < ·) (Set.range fun i : ι => ((hA i) ξ₀).val))
+    {base : Ordinal} (hbase : base < orderType α)
+    (hcod : Cardinal.mk {s : Set α //
+        s ⊆ {z : α | Ordinal.typein (· < ·) z < base} ∧ Cardinal.mk s ≤ Cardinal.mk σ} <
+      (Cardinal.mk α).ord.cof) :
+    ∃ r : Set α, ∃ t : Set α,
+      r ⊆ {z : α | Ordinal.typein (· < ·) z < base} ∧
+      Cardinal.mk t = Cardinal.mk α ∧
+      ∀ ⦃x⦄, x ∈ t →
+        A (pickParamAboveOrdinalRec hreg hord hlim hσ (fun i η => ((hA i) η).val) ξ₀ hU hbase x) ∩
+            {z : α | Ordinal.typein (· < ·) z < base} = r := by
+  let subα : Set α := {z : α | Ordinal.typein (· < ·) z < base}
+  let pick := pickParamAboveOrdinalRec hreg hord hlim hσ (fun i η => ((hA i) η).val) ξ₀ hU hbase
+  let codomain := {s : Set α // s ⊆ subα ∧ Cardinal.mk s ≤ Cardinal.mk σ}
+  let color : α → codomain := fun x =>
+    ⟨A (pick x) ∩ subα, inter_subset_right, by
+      dsimp [subα, pick]
+      exact picked_alpha0_inter_mk_le hreg hord hlim hσ hA ξ₀ hU hbase x⟩
+  have hfiber := Cardinal.infinite_pigeonhole_card color (Cardinal.mk α) le_rfl hreg.aleph0_le (by
+    simpa [codomain, subα] using hcod)
+  rcases hfiber with ⟨r', hr'⟩
+  refine ⟨r'.1, color ⁻¹' {r'}, r'.2.1, ?_, ?_⟩
+  · apply le_antisymm
+    · exact Cardinal.mk_set_le _
+    · exact hr'
+  · intro x hx
+    have hx' : color x = r' := by simpa using hx
+    exact congrArg Subtype.val hx'
+
+/-- Assemble a delta-system on stages from the constant-color pigeonhole output. -/
+theorem is_delta_system_of_constant_picked_alpha0_inter
+    {α σ ι : Type u} [LinearOrder α] [WellFoundedLT α] [IsWellOrder α (· < ·)]
+    [LinearOrder σ] [WellFoundedLT σ] [IsWellOrder σ (· < ·)]
+    (hreg : Cardinal.IsRegular (Cardinal.mk α))
+    (hord : Cardinal.ord (Cardinal.mk α) = orderType α)
+    (hlim : Order.IsSuccLimit (orderType α)) (hσ : Cardinal.mk σ < Cardinal.mk α)
+    {A : ι → Set α}
+    (hA : ∀ i, RelIso (· < · : σ → σ → Prop) (Subrel (· < · : α → α → Prop) (A i)))
+    (ξ₀ : σ)
+    (hU : Set.Unbounded (· < ·) (Set.range fun i : ι => ((hA i) ξ₀).val))
+    {base : Ordinal}
+    (hbase_eq : base =
+      iSup (fun η : {x : σ // x < ξ₀} =>
+        iSup fun i : ι => Order.succ (Ordinal.typein (· < ·) ((hA i) η.1).val)))
+    (hbase : base < orderType α)
+    {r t : Set α}
+    (hconst : ∀ ⦃x⦄, x ∈ t →
+      A (pickParamAboveOrdinalRec hreg hord hlim hσ (fun i η => ((hA i) η).val) ξ₀ hU hbase x) ∩
+          {z : α | Ordinal.typein (· < ·) z < base} = r) :
+    is_delta_system
+      (fun x : t =>
+        A (pickParamAboveOrdinalRec hreg hord hlim hσ (fun i η => ((hA i) η).val) ξ₀ hU hbase x.1)) := by
+  refine ⟨r, ?_⟩
+  intro x y hxy
+  apply Set.Subset.antisymm
+  · intro z hz
+    rcases lt_trichotomy x.1 y.1 with hlt | heq | hgt
+    · have hsub := picked_inter_subset_alpha0 hreg hord hlim hσ hA ξ₀ hU hbase_eq hbase hlt
+      have hzsub : z ∈ {z : α | Ordinal.typein (· < ·) z < base} := hsub hz
+      have hzroot : z ∈
+          A (pickParamAboveOrdinalRec hreg hord hlim hσ (fun i η => ((hA i) η).val) ξ₀ hU hbase x.1) ∩
+            {z : α | Ordinal.typein (· < ·) z < base} := ⟨hz.1, hzsub⟩
+      simpa [hconst x.2] using hzroot
+    · exact False.elim (hxy (Subtype.ext heq))
+    · have hsub := picked_inter_subset_alpha0 hreg hord hlim hσ hA ξ₀ hU hbase_eq hbase hgt
+      have hzswap : z ∈
+          A (pickParamAboveOrdinalRec hreg hord hlim hσ (fun i η => ((hA i) η).val) ξ₀ hU hbase y.1) ∩
+            A (pickParamAboveOrdinalRec hreg hord hlim hσ (fun i η => ((hA i) η).val) ξ₀ hU hbase x.1) :=
+        ⟨hz.2, hz.1⟩
+      have hzsub : z ∈ {z : α | Ordinal.typein (· < ·) z < base} := hsub hzswap
+      have hzroot : z ∈
+          A (pickParamAboveOrdinalRec hreg hord hlim hσ (fun i η => ((hA i) η).val) ξ₀ hU hbase x.1) ∩
+            {z : α | Ordinal.typein (· < ·) z < base} := ⟨hz.1, hzsub⟩
+      simpa [hconst x.2] using hzroot
+  · intro z hz
+    have hxz : z ∈
+        A (pickParamAboveOrdinalRec hreg hord hlim hσ (fun i η => ((hA i) η).val) ξ₀ hU hbase x.1) ∩
+          {z : α | Ordinal.typein (· < ·) z < base} := by
+      simpa [hconst x.2] using hz
+    have hyz : z ∈
+        A (pickParamAboveOrdinalRec hreg hord hlim hσ (fun i η => ((hA i) η).val) ξ₀ hU hbase y.1) ∩
+          {z : α | Ordinal.typein (· < ·) z < base} := by
+      simpa [hconst y.2] using hz
+    exact ⟨hxz.1, hyz.1⟩
+
+/-- Assembled unbounded-case Δ-system theorem, with the final bounded-codomain estimate supplied as
+an explicit hypothesis. This is the fully wired version of the helper stack for
+`delta_system_lemma_2`; the remaining wrapper only has to prove `hcod` from the original cardinal
+arithmetic hypothesis. -/
+theorem delta_system_lemma_2_of_bounded_codomain {κ : Cardinal}
+    (hκ : Cardinal.aleph0 ≤ κ)
+    {θ : Type u} [LinearOrder θ] [WellFoundedLT θ] [IsWellOrder θ (· < ·)]
+    (hκθ : κ < Cardinal.mk θ)
+    (hθ : Cardinal.IsRegular (Cardinal.mk θ))
+    (hθtype : Cardinal.ord (Cardinal.mk θ) = orderType θ)
+    {ρ : Type u} [LinearOrder ρ] [WellFoundedLT ρ] [IsWellOrder ρ (· < ·)]
+    (hρtype : Cardinal.ord (Cardinal.mk ρ) = orderType ρ)
+    (hρ : Cardinal.mk ρ < κ)
+    {ι : Type u} {A : ι → Set θ}
+    (h2A : ∀ i, RelIso (· < · : ρ → ρ → Prop) (Subrel (· < · : θ → θ → Prop) (A i)))
+    (hU : Set.Unbounded (· < ·) (⋃ i, A i))
+    (hcod : ∀ {base : Ordinal}, base < orderType θ →
+      Cardinal.mk {s : Set θ //
+          s ⊆ {z : θ | Ordinal.typein (· < ·) z < base} ∧ Cardinal.mk s ≤ Cardinal.mk ρ} <
+        (Cardinal.mk θ).ord.cof) :
+    ∃ t : Set θ, Cardinal.mk t = Cardinal.mk θ ∧
+      ∃ pick : θ → ι, is_delta_system (fun x : t => A (pick x.1)) := by
+  classical
+  let hlim := isSuccLimit_orderType_of_isRegular hθ hθtype
+  rcases exists_minimal_parameter_with_alpha0_bound hκθ hθ hθtype hρtype hρ h2A hU with
+    ⟨ξ₀, hξU, _hξmin, hbase_lt⟩
+  let base : Ordinal :=
+    iSup (fun η : {x : ρ // x < ξ₀} =>
+      iSup fun i : ι => Order.succ (Ordinal.typein (· < ·) ((h2A i) η.1).val))
+  have hbase_eq : base =
+      iSup (fun η : {x : ρ // x < ξ₀} =>
+        iSup fun i : ι => Order.succ (Ordinal.typein (· < ·) ((h2A i) η.1).val)) := rfl
+  have hbase : base < orderType θ := by simpa [base] using hbase_lt
+  let pick := pickParamAboveOrdinalRec hθ hθtype hlim (lt_trans hρ hκθ)
+    (fun i η => ((h2A i) η).val) ξ₀ hξU hbase
+  rcases exists_large_constant_picked_alpha0_inter hθ hθtype hlim (lt_trans hρ hκθ)
+      h2A ξ₀ hξU hbase (hcod hbase) with
+    ⟨r, stages, _hrsub, hstages, hconst⟩
+  refine ⟨stages, hstages, pick, ?_⟩
+  exact is_delta_system_of_constant_picked_alpha0_inter hθ hθtype hlim
+    (lt_trans hρ hκθ) h2A ξ₀ hξU hbase_eq hbase hconst
+
 end delta_system
 
 namespace Set

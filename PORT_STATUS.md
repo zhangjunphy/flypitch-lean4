@@ -139,6 +139,30 @@ The upstream project breaks into two large branches that meet in `zfc.lean`.
   `secondCountableTopology_pi_of_countable`).
 - [x] Add the corresponding CCC corollary for countable products of second-countable spaces
   (`countable_chain_condition_pi_of_countable`).
+- [x] Add the first Mathlib-4 cofinality/initial-segment helper tranche for the remaining
+  `SetTheory` delta-system proof (`orderType`, `unbounded_lt_iff_isCofinal`,
+  `cof_eq_mk_of_isRegular`, `exists_unbounded_of_unbounded_iUnion`,
+  `exists_minimal_unbounded_parameter`, `mk_Iio_lt_of_ord_eq`, `mk_lt_of_bounded`).
+- [x] Add the next ordinal-supremum helper tranche for the remaining `SetTheory` delta-system
+  proof (`isSuccLimit_orderType_of_isRegular`, `iSup_lt_orderType_of_isRegular`,
+  `iSup_succ_lt_orderType_of_isRegular`).
+- [x] Add the outer `α₀` supremum-bound helper tranche for `SetTheory`
+  (`mk_Iio_lt_of_lt_card`, `mk_subtype_lt_of_lt_card`,
+  `iSup_Iio_lt_orderType_of_isRegular`).
+- [x] Add the inner `α₀` supremum-bound helper tranche for `SetTheory`
+  (`isWellOrder_lt_of_linearOrder`, `iSup_succ_typein_range_lt_of_bounded`,
+  `inner_iSup_lt_of_minimal_unbounded_parameter`).
+- [x] Assemble the full `α₀` double-supremum bound for the remaining `SetTheory`
+  delta-system proof (`alpha0_lt_orderType_of_minimal_unbounded_parameter`).
+- [x] Package the opening of `delta_system_lemma_2` through the minimal unbounded parameter and
+  associated `α₀` bound (`exists_minimal_parameter_with_alpha0_bound`).
+- [x] Add the `sub_α₀` smallness and strict-domination helpers needed before the recursive pick
+  construction (`mk_typein_initial_segment_lt`,
+  `exists_minimal_parameter_with_small_alpha0_segment`, `exists_gt_of_isSuccLimit_orderType`,
+  `exists_range_gt_of_unbounded`).
+- [x] Add the ordinal-based selection helpers used by the recursive pick construction
+  (`exists_index_above_ordinal_of_unbounded`, `choose_index_above_ordinal_of_unbounded`,
+  `choose_index_above_ordinal_of_unbounded_spec`).
 - [x] Extend the pure-`pSet` `aleph_one.lean` port through the first countability/specification
   tranche (`mk_injects_into_of_mk_le_omega`, `injects_into_omega_of_mem_aleph_one`,
   `aleph_one_satisfies_spec`).
@@ -284,6 +308,62 @@ Evidence-backed status:
   now ported too: `extend`, `isOpenMap_apply`, `restrict_image_pi`, and `isOpenMap_restrict` are in
   place together with upstream-style compatibility names `is_open_map_apply`,
   `is_topological_basis_pi`, and `is_open_map_restrict`.
+- The next `SetTheory` delta-system helper tranche is now in place and compiling. It bridges the
+  Lean 3 relation-style proof to Mathlib 4's typeclass-based cofinality API via
+  `unbounded_lt_iff_isCofinal`, `cof_eq_mk_of_isRegular`,
+  `exists_unbounded_of_unbounded_iUnion`, and `exists_minimal_unbounded_parameter`. It also adds the
+  first bounded-initial-segment cardinality helpers (`mk_Iio_lt_of_ord_eq`, `mk_lt_of_bounded`)
+  needed for the upcoming `α₀` construction in `delta_system_lemma_2`.
+- The `SetTheory` helper layer now also has the first regular-order-type supremum bounds:
+  `isSuccLimit_orderType_of_isRegular`, `iSup_lt_orderType_of_isRegular`, and
+  `iSup_succ_lt_orderType_of_isRegular`. These give the Mathlib 4-native replacement for the
+  Lean 3 `ord_is_limit` / `sup_lt_ord_of_is_regular` pieces used in the `α₀` construction.
+- The outer half of the `α₀` construction is now isolated in compiling helpers:
+  `mk_Iio_lt_of_lt_card`, `mk_subtype_lt_of_lt_card`, and
+  `iSup_Iio_lt_orderType_of_isRegular`. The remaining hard piece for `delta_system_lemma_2` is the
+  inner supremum bound for each fixed parameter below the minimal unbounded one.
+- The inner half of the `α₀` construction is now also isolated in compiling helpers:
+  `iSup_succ_typein_range_lt_of_bounded` turns boundedness of a realized range into a bound on the
+  supremum of successor type-indices, and `inner_iSup_lt_of_minimal_unbounded_parameter` packages
+  this for parameters below the minimal unbounded parameter.
+- The two halves are now combined by `alpha0_lt_orderType_of_minimal_unbounded_parameter`, which
+  proves the exact double-supremum bound needed for the `α₀` used in `delta_system_lemma_2`.
+- The opening of `delta_system_lemma_2` is now packaged through
+  `exists_minimal_parameter_with_alpha0_bound`: from the unbounded union hypotheses it selects the
+  minimal unbounded parameter and produces the associated `α₀ < orderType θ` bound in one compiled
+  step.
+- The next proof setup for `delta_system_lemma_2` is in place: `mk_typein_initial_segment_lt` proves
+  the smallness of the `sub_α₀` initial segment, and `exists_range_gt_of_unbounded` packages the
+  strict domination step needed to define the recursive picking function from the unbounded range of
+  the minimal parameter.
+- The recursive-pick selection step is now also isolated: from any ordinal bound below
+  `orderType θ`, `choose_index_above_ordinal_of_unbounded` selects an index whose realized value in
+  the minimal unbounded range lies strictly above the corresponding `enum` point.
+- The recursive `pick` construction from `delta_system_lemma_2` is now packaged in compiling
+  helpers: `pickAboveOrdinalRec`, its unfolding equation, the strict type-index increase lemma, the
+  strict monotonicity of realized picked values, and cardinality lemmas showing both the realized
+  picked values and the picked index range have full cardinality.
+- The actual Lean 3-style parameterized `pick` construction is now also isolated in compiling
+  helpers: `pickParamAboveOrdinalRec` chooses indices whose distinguished coordinate dominates a
+  fixed base bound and all previously picked coordinates across the small parameter type, with
+  lemmas `base_lt_pickParamAboveOrdinalRec` and `typein_param_lt_pickParamAboveOrdinalRec` matching
+  the inequalities used in the intersection-in-`sub_α₀` part of `delta_system_lemma_2`.
+- The first pieces of the intersection-in-`sub_α₀` argument now compile separately:
+  `typein_lt_alpha0_of_param_lt` handles the branch where the local parameter is below `ξ₀`, and
+  `param_lt_of_mem_and_pick_bound` packages the rel-isomorphism contradiction branch used to force
+  that inequality from membership plus the parameterized pick bound.
+- These pieces are now combined by `picked_inter_subset_alpha0`, which proves that pairwise
+  intersections of the parameterized picked family lie inside the typein-initial segment below the
+  constructed `α₀` base. This completes the main intersection-subset step before the final infinite
+  pigeonhole argument in `delta_system_lemma_2`.
+- The bounded-codomain estimate for that final pigeonhole step is now also isolated:
+  `picked_alpha0_inter_mk_le` proves each picked member's intersection with the `α₀` initial segment
+  has cardinality at most the parameter type, via the rel-isomorphism inverse into `{η // η < ξ₀}`.
+- The final constant-color and assembly steps are now isolated too:
+  `exists_large_constant_picked_alpha0_inter` applies infinite pigeonhole to the colors
+  `x ↦ A (pick x) ∩ sub_α₀`, and `is_delta_system_of_constant_picked_alpha0_inter` turns the
+  constant-color output plus the intersection-subset theorem into an actual delta-system on the
+  selected stage set.
 
 So the real near-term blockers are now concentrated on the forcing side:
 
