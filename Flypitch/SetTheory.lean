@@ -81,66 +81,9 @@ theorem is_delta_system_precompose_iff {ι : Type w} {ι' : Type w'} {α : Type 
   · intro h
     simpa [Function.comp_def] using is_delta_system_precompose f.symm f.symm.injective h
 
-theorem succ_is_regular {c : Cardinal} (h : Cardinal.aleph0 ≤ c) : Cardinal.IsRegular (Order.succ c) :=
-  Cardinal.isRegular_succ h
-
-theorem mk_set_le {α : Type u} (s : Set α) : Cardinal.mk s ≤ Cardinal.mk α :=
-  Cardinal.mk_set_le s
-
-theorem mk_range_eq {α : Type u} {β : Type u} (f : α → β) (h : Function.Injective f) :
-    Cardinal.mk (Set.range f) = Cardinal.mk α :=
-  Cardinal.mk_range_eq f h
-
-theorem card_typein_toType_lt (c : Cardinal) (x : c.ord.ToType) :
-    Ordinal.card (Ordinal.typein (α := c.ord.ToType) (· < ·) x) < c :=
-  Cardinal.card_typein_toType_lt c x
-
-theorem not_unbounded_iff {α : Type u} {r : α → α → Prop} (s : Set α) :
-    ¬ Set.Unbounded r s ↔ Set.Bounded r s :=
-  Set.not_unbounded_iff s
-
-theorem unbounded_of_unbounded_iUnion {α ι : Type u} [LinearOrder α] {s : ι → Set α}
-    (h₁ : IsCofinal (⋃ i, s i)) (h₂ : Cardinal.mk ι < Order.cof α) : ∃ i, IsCofinal (s i) :=
-  Cardinal.unbounded_of_unbounded_iUnion h₁ h₂
-
-theorem ord_eq (α : Type u) : ∃ (r : α → α → Prop) (_ : IsWellOrder α r),
-    Cardinal.ord (Cardinal.mk α) = Ordinal.type r :=
-  Cardinal.exists_ord_eq α
-
-theorem lt_ord {c : Cardinal} {o : Ordinal} : o < Cardinal.ord c ↔ o.card < c :=
-  Cardinal.lt_ord
-
-theorem ord_lt_ord {c₁ c₂ : Cardinal} : Cardinal.ord c₁ < Cardinal.ord c₂ ↔ c₁ < c₂ :=
-  Cardinal.ord_lt_ord
-
-theorem mk_image_eq {α β : Type u} (f : α → β) (s : Set α) (h : Function.Injective f) :
-    Cardinal.mk (f '' s) = Cardinal.mk s :=
-  Cardinal.mk_image_eq (s := s) h
-
-theorem mk_preimage_of_injective_of_subset_range {α β : Type u} (f : α → β) (s : Set β)
-    (h : Function.Injective f) (h2 : s ⊆ Set.range f) :
-    Cardinal.mk (f ⁻¹' s) = Cardinal.mk s :=
-  Cardinal.mk_preimage_of_injective_of_subset_range f s h h2
-
-theorem card_type {α : Type u} (r : α → α → Prop) [IsWellOrder α r] :
-    Ordinal.card (Ordinal.type r) = Cardinal.mk α :=
-  Ordinal.card_type r
-
-theorem mk_bounded_subset_le {α : Type u} (s : Set α) (c : Cardinal) :
-    Cardinal.mk { t : Set α // t ⊆ s ∧ Cardinal.mk t ≤ c } ≤ max (Cardinal.mk s) Cardinal.aleph0 ^ c :=
-  Cardinal.mk_bounded_subset_le s c
-
-theorem le_powerlt {b c : Cardinal} (a : Cardinal) (h : c < b) : a ^ c ≤ a ^< b :=
-  Cardinal.le_powerlt a h
-
+/-- The order type of a linear well-founded order as an ordinal. -/
 abbrev orderType (α : Type u) [LinearOrder α] [WellFoundedLT α] : Ordinal :=
   Ordinal.type (α := α) (· < ·)
-
-/-- A well-founded linear order is a well-order for its native strict order. -/
-instance (priority := 100) isWellOrder_lt_of_linearOrder {α : Type u} [LinearOrder α] [WellFoundedLT α] :
-    IsWellOrder α (· < ·) where
-  wf := IsWellFounded.wf
-  trichotomous := fun a b hab hba => le_antisymm (not_lt.mp hba) (not_lt.mp hab)
 
 /-- For a linear order, relation-style unboundedness for `<` is the same as `IsCofinal`. -/
 theorem unbounded_lt_iff_isCofinal {α : Type u} [LinearOrder α] (s : Set α) :
@@ -274,15 +217,13 @@ theorem iSup_succ_lt_orderType_of_isRegular {α : Type u} {ι : Type u}
 
 /-- Initial segments of a well-founded linear order are small relative to any strictly larger
 cardinal. -/
-theorem mk_Iio_lt_of_lt_card {ρ : Type u} [LinearOrder ρ] [WellFoundedLT ρ]
-    (hρtype : Cardinal.ord (Cardinal.mk ρ) = orderType ρ) {c : Cardinal}
-    (hρc : Cardinal.mk ρ < c) (ξ : ρ) : Cardinal.mk (Set.Iio ξ) < c := by
-  exact lt_trans (mk_Iio_lt_of_ord_eq ξ hρtype) hρc
+theorem mk_Iio_lt_of_lt_card {ρ : Type u} [LinearOrder ρ]
+    {c : Cardinal} (hρc : Cardinal.mk ρ < c) (ξ : ρ) : Cardinal.mk (Set.Iio ξ) < c :=
+  lt_of_le_of_lt (Cardinal.mk_set_le (Set.Iio ξ)) hρc
 
 /-- Subtype form of `mk_Iio_lt_of_lt_card`, convenient for indexing `α₀` by `{x // x < ξ}`. -/
-theorem mk_subtype_lt_of_lt_card {ρ : Type u} [LinearOrder ρ] [WellFoundedLT ρ]
-    (hρtype : Cardinal.ord (Cardinal.mk ρ) = orderType ρ) {c : Cardinal}
-    (hρc : Cardinal.mk ρ < c) (ξ : ρ) : Cardinal.mk {x : ρ // x < ξ} < c := by
+theorem mk_subtype_lt_of_lt_card {ρ : Type u} [LinearOrder ρ]
+    {c : Cardinal} (hρc : Cardinal.mk ρ < c) (ξ : ρ) : Cardinal.mk {x : ρ // x < ξ} < c :=
   calc
     Cardinal.mk {x : ρ // x < ξ} = Cardinal.mk (Set.Iio ξ) := by
       apply Cardinal.mk_congr
@@ -291,19 +232,18 @@ theorem mk_subtype_lt_of_lt_card {ρ : Type u} [LinearOrder ρ] [WellFoundedLT �
         invFun := fun x => ⟨x.1, x.2⟩
         left_inv := fun _ => rfl
         right_inv := fun _ => rfl }
-    _ < c := mk_Iio_lt_of_lt_card hρtype hρc ξ
+    _ < c := mk_Iio_lt_of_lt_card hρc ξ
 
 /-- Outer-supremum bound for the `α₀` construction in the Δ-system lemma. -/
 theorem iSup_Iio_lt_orderType_of_isRegular
-    {θ ρ : Type u} [LinearOrder θ] [WellFoundedLT θ] [LinearOrder ρ] [WellFoundedLT ρ]
+    {θ ρ : Type u} [LinearOrder θ] [WellFoundedLT θ] [LinearOrder ρ]
     (hθ : Cardinal.IsRegular (Cardinal.mk θ))
     (hθtype : Cardinal.ord (Cardinal.mk θ) = orderType θ)
-    (hρtype : Cardinal.ord (Cardinal.mk ρ) = orderType ρ)
     (hρθ : Cardinal.mk ρ < Cardinal.mk θ) (ξ : ρ)
     {f : {x : ρ // x < ξ} → Ordinal} (hf : ∀ x, f x < orderType θ) :
     iSup f < orderType θ := by
   exact iSup_lt_orderType_of_isRegular hθ hθtype
-    (mk_subtype_lt_of_lt_card hρtype hρθ ξ) hf
+    (mk_subtype_lt_of_lt_card hρθ ξ) hf
 
 /-- If the range of a map into a well-founded linear order is bounded, then the supremum of
 successor type-indices of its values is below the full order type. This is the inner-bound step in
@@ -324,29 +264,27 @@ theorem iSup_succ_typein_range_lt_of_bounded {α ι : Type u} [LinearOrder α] [
 bounded realized range, hence a bounded successor-type-index supremum. -/
 theorem inner_iSup_lt_of_minimal_unbounded_parameter
     {θ ρ ι : Type u} [LinearOrder θ] [WellFoundedLT θ] [IsWellOrder θ (· < ·)] [LinearOrder ρ]
-    [WellFoundedLT ρ]
     (nr : ι → ρ → θ) {ξ : ρ}
     (hmin : ∀ η : ρ, η < ξ → ¬ Set.Unbounded (· < ·) (Set.range fun i : ι => nr i η))
     (η : {x : ρ // x < ξ}) :
     iSup (fun i : ι => Order.succ (Ordinal.typein (· < ·) (nr i η.1))) < orderType θ := by
   have hbdd : Set.Bounded (· < ·) (Set.range fun i : ι => nr i η.1) := by
-    exact (not_unbounded_iff (s := Set.range fun i : ι => nr i η.1)).1 (hmin η.1 η.2)
+    exact (Set.not_unbounded_iff (s := Set.range fun i : ι => nr i η.1)).1 (hmin η.1 η.2)
   exact iSup_succ_typein_range_lt_of_bounded (fun i : ι => nr i η.1) hbdd
 
 /-- The full `α₀` bound from the Δ-system lemma proof, assembled from the inner and outer helper
 tranches. -/
 theorem alpha0_lt_orderType_of_minimal_unbounded_parameter
     {θ ρ ι : Type u} [LinearOrder θ] [WellFoundedLT θ] [IsWellOrder θ (· < ·)]
-    [LinearOrder ρ] [WellFoundedLT ρ]
+    [LinearOrder ρ]
     (hθ : Cardinal.IsRegular (Cardinal.mk θ))
     (hθtype : Cardinal.ord (Cardinal.mk θ) = orderType θ)
-    (hρtype : Cardinal.ord (Cardinal.mk ρ) = orderType ρ)
     (hρθ : Cardinal.mk ρ < Cardinal.mk θ)
     (nr : ι → ρ → θ) {ξ : ρ}
     (hmin : ∀ η : ρ, η < ξ → ¬ Set.Unbounded (· < ·) (Set.range fun i : ι => nr i η)) :
     (iSup fun η : {x : ρ // x < ξ} =>
       iSup fun i : ι => Order.succ (Ordinal.typein (· < ·) (nr i η.1))) < orderType θ := by
-  apply iSup_Iio_lt_orderType_of_isRegular hθ hθtype hρtype hρθ ξ
+  apply iSup_Iio_lt_orderType_of_isRegular hθ hθtype hρθ ξ
   intro η
   exact inner_iSup_lt_of_minimal_unbounded_parameter nr hmin η
 
@@ -357,7 +295,7 @@ theorem exists_minimal_parameter_with_alpha0_bound {κ : Cardinal}
     (hκθ : κ < Cardinal.mk θ) (hθ : Cardinal.IsRegular (Cardinal.mk θ))
     (hθtype : Cardinal.ord (Cardinal.mk θ) = orderType θ)
     {ρ : Type u} [LinearOrder ρ] [WellFoundedLT ρ]
-    (hρtype : Cardinal.ord (Cardinal.mk ρ) = orderType ρ)
+    (hρθ : Cardinal.mk ρ < Cardinal.mk θ)
     (hρ : Cardinal.mk ρ < κ)
     {ι : Type u} {A : ι → Set θ}
     (h2A : ∀ i, RelIso (· < · : ρ → ρ → Prop) (Subrel (· < · : θ → θ → Prop) (A i)))
@@ -371,8 +309,8 @@ theorem exists_minimal_parameter_with_alpha0_bound {κ : Cardinal}
           orderType θ := by
   rcases exists_minimal_unbounded_parameter hκθ hθ hθtype hρ h2A hU with ⟨ξ, hξU, hξmin⟩
   refine ⟨ξ, hξU, hξmin, ?_⟩
-  exact alpha0_lt_orderType_of_minimal_unbounded_parameter hθ hθtype hρtype
-    (lt_trans hρ hκθ) (fun i ξ => ((h2A i) ξ).val) hξmin
+  exact alpha0_lt_orderType_of_minimal_unbounded_parameter hθ hθtype hρθ
+    (fun i ξ => ((h2A i) ξ).val) hξmin
 
 /-- Packaged opening of `delta_system_lemma_2` through the smallness of the typein-initial
 segment determined by the constructed `α₀`. -/
@@ -381,7 +319,7 @@ theorem exists_minimal_parameter_with_small_alpha0_segment {κ : Cardinal}
     (hκθ : κ < Cardinal.mk θ) (hθ : Cardinal.IsRegular (Cardinal.mk θ))
     (hθtype : Cardinal.ord (Cardinal.mk θ) = orderType θ)
     {ρ : Type u} [LinearOrder ρ] [WellFoundedLT ρ]
-    (hρtype : Cardinal.ord (Cardinal.mk ρ) = orderType ρ)
+    (hρθ : Cardinal.mk ρ < Cardinal.mk θ)
     (hρ : Cardinal.mk ρ < κ)
     {ι : Type u} {A : ι → Set θ}
     (h2A : ∀ i, RelIso (· < · : ρ → ρ → Prop) (Subrel (· < · : θ → θ → Prop) (A i)))
@@ -396,7 +334,7 @@ theorem exists_minimal_parameter_with_small_alpha0_segment {κ : Cardinal}
             iSup fun η : {x : ρ // x < ξ} =>
               iSup fun i : ι => Order.succ (Ordinal.typein (· < ·) ((h2A i) η.1).val)} <
         Cardinal.mk θ := by
-  rcases exists_minimal_parameter_with_alpha0_bound hκθ hθ hθtype hρtype hρ h2A hU with
+  rcases exists_minimal_parameter_with_alpha0_bound hκθ hθ hθtype hρθ hρ h2A hU with
     ⟨ξ, hξU, hξmin, hα⟩
   exact ⟨ξ, hξU, hξmin, mk_typein_initial_segment_lt hθtype hα⟩
 
@@ -670,9 +608,30 @@ theorem typein_param_lt_pickParamAboveOrdinalRec
       (η, ⟨y, hyx⟩)
   simpa using lt_of_le_of_lt hle hchosen'
 
+/-- The `pickParamAboveOrdinalRec` function is globally injective. -/
+theorem pickParamAboveOrdinalRec_injective
+    {α σ ι : Type u} [LinearOrder α] [WellFoundedLT α] [IsWellOrder α (· < ·)]
+    (hreg : Cardinal.IsRegular (Cardinal.mk α))
+    (hord : Cardinal.ord (Cardinal.mk α) = orderType α)
+    (hlim : Order.IsSuccLimit (orderType α)) (hσ : Cardinal.mk σ < Cardinal.mk α)
+    (g : ι → σ → α) (ξ₀ : σ)
+    (hU : Set.Unbounded (· < ·) (Set.range fun i : ι => g i ξ₀))
+    {base : Ordinal} (hbase : base < orderType α) :
+    Function.Injective (pickParamAboveOrdinalRec hreg hord hlim hσ g ξ₀ hU hbase) := by
+  intro x y h
+  by_contra hne
+  rcases lt_trichotomy x y with (hlt | heq | hgt)
+  · have h_lt := typein_param_lt_pickParamAboveOrdinalRec hreg hord hlim hσ g ξ₀ hU hbase hlt ξ₀
+    rw [h] at h_lt
+    exact lt_irrefl _ h_lt
+  · exact hne heq
+  · have h_lt := typein_param_lt_pickParamAboveOrdinalRec hreg hord hlim hσ g ξ₀ hU hbase hgt ξ₀
+    rw [h] at h_lt
+    exact lt_irrefl _ h_lt
+
 /-- Membership in the `η < ξ₀` part of the `α₀` supremum gives a strict type-index bound. -/
 theorem typein_lt_alpha0_of_param_lt
-    {α σ ι : Type u} [LinearOrder α] [WellFoundedLT α] [IsWellOrder α (· < ·)]
+    {α σ ι : Type u} [LinearOrder α] [IsWellOrder α (· < ·)]
     [LinearOrder σ] (g : ι → σ → α) {ξ₀ η : σ} (hη : η < ξ₀) (i : ι) :
     Ordinal.typein (· < ·) (g i η) <
       iSup (fun η' : {x : σ // x < ξ₀} =>
@@ -685,7 +644,7 @@ theorem typein_lt_alpha0_of_param_lt
 /-- If a value is in a member `A i`, then the inverse image of that value under the rel-isomorphism
 has type-index at least `ξ₀` exactly when it is not below `ξ₀`. -/
 theorem not_lt_of_typein_ge_typein
-    {σ : Type u} [LinearOrder σ] [WellFoundedLT σ] [IsWellOrder σ (· < ·)]
+    {σ : Type u} [LinearOrder σ] [IsWellOrder σ (· < ·)]
     {η ξ₀ : σ} (hη : ¬ Ordinal.typein (· < ·) η < Ordinal.typein (· < ·) ξ₀) :
     ¬ η < ξ₀ := by
   intro hlt
@@ -694,8 +653,7 @@ theorem not_lt_of_typein_ge_typein
 /-- A rel-isomorphism to a picked set turns the parameterized pick inequality into a strict
 comparison in the parameter order. This is the contradiction branch in the intersection proof. -/
 theorem param_lt_of_mem_and_pick_bound
-    {α σ ι : Type u} [LinearOrder α] [WellFoundedLT α] [IsWellOrder α (· < ·)]
-    [LinearOrder σ] [WellFoundedLT σ] [IsWellOrder σ (· < ·)]
+    {α σ ι : Type u} [LinearOrder α] [LinearOrder σ]
     {A : ι → Set α}
     (hA : ∀ i, RelIso (· < · : σ → σ → Prop) (Subrel (· < · : α → α → Prop) (A i)))
     {j : ι} {z : α} (hzj : z ∈ A j) {ξ₀ : σ}
@@ -707,7 +665,7 @@ theorem param_lt_of_mem_and_pick_bound
 /-- Pairwise intersections of the parameterized picked family lie in the `α₀` initial segment. -/
 theorem picked_inter_subset_alpha0
     {α σ ι : Type u} [LinearOrder α] [WellFoundedLT α] [IsWellOrder α (· < ·)]
-    [LinearOrder σ] [WellFoundedLT σ] [IsWellOrder σ (· < ·)]
+    [LinearOrder σ]
     (hreg : Cardinal.IsRegular (Cardinal.mk α))
     (hord : Cardinal.ord (Cardinal.mk α) = orderType α)
     (hlim : Order.IsSuccLimit (orderType α)) (hσ : Cardinal.mk σ < Cardinal.mk α)
@@ -751,7 +709,7 @@ theorem picked_inter_subset_alpha0
 bounded-codomain estimate used before applying infinite pigeonhole. -/
 theorem picked_alpha0_inter_mk_le
     {α σ ι : Type u} [LinearOrder α] [WellFoundedLT α] [IsWellOrder α (· < ·)]
-    [LinearOrder σ] [WellFoundedLT σ] [IsWellOrder σ (· < ·)]
+    [LinearOrder σ]
     (hreg : Cardinal.IsRegular (Cardinal.mk α))
     (hord : Cardinal.ord (Cardinal.mk α) = orderType α)
     (hlim : Order.IsSuccLimit (orderType α)) (hσ : Cardinal.mk σ < Cardinal.mk α)
@@ -796,7 +754,7 @@ theorem picked_alpha0_inter_mk_le
 full-cardinality set of stages on which the intersection with the small initial segment is constant. -/
 theorem exists_large_constant_picked_alpha0_inter
     {α σ ι : Type u} [LinearOrder α] [WellFoundedLT α] [IsWellOrder α (· < ·)]
-    [LinearOrder σ] [WellFoundedLT σ] [IsWellOrder σ (· < ·)]
+    [LinearOrder σ]
     (hreg : Cardinal.IsRegular (Cardinal.mk α))
     (hord : Cardinal.ord (Cardinal.mk α) = orderType α)
     (hlim : Order.IsSuccLimit (orderType α)) (hσ : Cardinal.mk σ < Cardinal.mk α)
@@ -835,7 +793,7 @@ theorem exists_large_constant_picked_alpha0_inter
 /-- Assemble a delta-system on stages from the constant-color pigeonhole output. -/
 theorem is_delta_system_of_constant_picked_alpha0_inter
     {α σ ι : Type u} [LinearOrder α] [WellFoundedLT α] [IsWellOrder α (· < ·)]
-    [LinearOrder σ] [WellFoundedLT σ] [IsWellOrder σ (· < ·)]
+    [LinearOrder σ]
     (hreg : Cardinal.IsRegular (Cardinal.mk α))
     (hord : Cardinal.ord (Cardinal.mk α) = orderType α)
     (hlim : Order.IsSuccLimit (orderType α)) (hσ : Cardinal.mk σ < Cardinal.mk α)
@@ -893,13 +851,11 @@ an explicit hypothesis. This is the fully wired version of the helper stack for
 `delta_system_lemma_2`; the remaining wrapper only has to prove `hcod` from the original cardinal
 arithmetic hypothesis. -/
 theorem delta_system_lemma_2_of_bounded_codomain {κ : Cardinal}
-    (hκ : Cardinal.aleph0 ≤ κ)
     {θ : Type u} [LinearOrder θ] [WellFoundedLT θ] [IsWellOrder θ (· < ·)]
     (hκθ : κ < Cardinal.mk θ)
     (hθ : Cardinal.IsRegular (Cardinal.mk θ))
     (hθtype : Cardinal.ord (Cardinal.mk θ) = orderType θ)
-    {ρ : Type u} [LinearOrder ρ] [WellFoundedLT ρ] [IsWellOrder ρ (· < ·)]
-    (hρtype : Cardinal.ord (Cardinal.mk ρ) = orderType ρ)
+    {ρ : Type u} [LinearOrder ρ] [WellFoundedLT ρ]
     (hρ : Cardinal.mk ρ < κ)
     {ι : Type u} {A : ι → Set θ}
     (h2A : ∀ i, RelIso (· < · : ρ → ρ → Prop) (Subrel (· < · : θ → θ → Prop) (A i)))
@@ -912,7 +868,7 @@ theorem delta_system_lemma_2_of_bounded_codomain {κ : Cardinal}
       ∃ pick : θ → ι, is_delta_system (fun x : t => A (pick x.1)) := by
   classical
   let hlim := isSuccLimit_orderType_of_isRegular hθ hθtype
-  rcases exists_minimal_parameter_with_alpha0_bound hκθ hθ hθtype hρtype hρ h2A hU with
+  rcases exists_minimal_parameter_with_alpha0_bound hκθ hθ hθtype (lt_trans hρ hκθ) hρ h2A hU with
     ⟨ξ₀, hξU, _hξmin, hbase_lt⟩
   let base : Ordinal :=
     iSup (fun η : {x : ρ // x < ξ₀} =>
@@ -929,6 +885,183 @@ theorem delta_system_lemma_2_of_bounded_codomain {κ : Cardinal}
   refine ⟨stages, hstages, pick, ?_⟩
   exact is_delta_system_of_constant_picked_alpha0_inter hθ hθtype hlim
     (lt_trans hρ hκθ) h2A ξ₀ hξU hbase_eq hbase hconst
+
+
+/-- Bounded codomain estimate derived from the cardinal arithmetic hypothesis. -/
+theorem mk_bounded_subsets_lt_cof {κ : Cardinal} (hκ : ℵ₀ ≤ κ)
+    {θ : Type u} [LinearOrder θ] [WellFoundedLT θ] [IsWellOrder θ (· < ·)]
+    (hκθ : κ < Cardinal.mk θ) (hθ : Cardinal.IsRegular (Cardinal.mk θ))
+    (hθtype : Cardinal.ord (Cardinal.mk θ) = orderType θ)
+    (hθ_le : ∀ β < Cardinal.mk θ, β ^< κ < Cardinal.mk θ)
+    {ρ : Type u}
+    (hρ : Cardinal.mk ρ < κ)
+    {base : Ordinal} (hbase : base < orderType θ) :
+    Cardinal.mk {s : Set θ //
+      s ⊆ {z : θ | Ordinal.typein (· < ·) z < base} ∧ Cardinal.mk s ≤ Cardinal.mk ρ} <
+    (Cardinal.mk θ).ord.cof := by
+  let T : Set θ := {z : θ | Ordinal.typein (· < ·) z < base}
+  have hT_lt : Cardinal.mk T < Cardinal.mk θ := mk_typein_initial_segment_lt hθtype hbase
+  have h_aleph0_lt : ℵ₀ < Cardinal.mk θ := lt_of_le_of_lt hκ hκθ
+  have hmax_lt : max (Cardinal.mk T) ℵ₀ < Cardinal.mk θ :=
+    max_lt hT_lt h_aleph0_lt
+  have hpow_lt : max (Cardinal.mk T) ℵ₀ ^ (Cardinal.mk ρ) < Cardinal.mk θ :=
+    calc
+      max (Cardinal.mk T) ℵ₀ ^ (Cardinal.mk ρ) ≤
+        max (Cardinal.mk T) ℵ₀ ^< κ := Cardinal.le_powerlt (max (Cardinal.mk T) ℵ₀) hρ
+      _ < Cardinal.mk θ := hθ_le _ hmax_lt
+  calc
+    Cardinal.mk {s : Set θ // s ⊆ T ∧ Cardinal.mk s ≤ Cardinal.mk ρ} ≤
+      max (Cardinal.mk T) ℵ₀ ^ (Cardinal.mk ρ) :=
+      Cardinal.mk_bounded_subset_le T (Cardinal.mk ρ)
+    _ < Cardinal.mk θ := hpow_lt
+    _ = (Cardinal.mk θ).ord.cof := hθ.cof_ord.symm
+
+/-- Full Δ-system lemma for the unbounded-index case, without the `hcod` hypothesis. -/
+theorem delta_system_lemma_2 {κ : Cardinal} (hκ : ℵ₀ ≤ κ)
+    {θ : Type u} [LinearOrder θ] [WellFoundedLT θ] [IsWellOrder θ (· < ·)]
+    (hκθ : κ < Cardinal.mk θ) (hθ : Cardinal.IsRegular (Cardinal.mk θ))
+    (hθtype : Cardinal.ord (Cardinal.mk θ) = orderType θ)
+    (hθ_le : ∀ β < Cardinal.mk θ, β ^< κ < Cardinal.mk θ)
+    {ρ : Type u} [LinearOrder ρ] [WellFoundedLT ρ]
+    (hρθ : Cardinal.mk ρ < Cardinal.mk θ) (hρ : Cardinal.mk ρ < κ)
+    {ι : Type u} {A : ι → Set θ}
+    (h2A : ∀ i, RelIso (· < · : ρ → ρ → Prop) (Subrel (· < · : θ → θ → Prop) (A i)))
+    (hU : Set.Unbounded (· < ·) (⋃ i, A i)) :
+    ∃ t : Set θ, Cardinal.mk t = Cardinal.mk θ ∧ ∃ pick : θ → ι,
+      is_delta_system (fun x : t => A (pick x.1)) := by
+  classical
+  let hlim := isSuccLimit_orderType_of_isRegular hθ hθtype
+  rcases exists_minimal_parameter_with_alpha0_bound hκθ hθ hθtype hρθ hρ h2A hU with
+    ⟨ξ₀, hξU, _hξmin, hbase_lt⟩
+  let base : Ordinal :=
+    iSup (fun η : {x : ρ // x < ξ₀} =>
+      iSup fun i : ι => Order.succ (Ordinal.typein (· < ·) ((h2A i) η.1).val))
+  have hbase_eq : base =
+      iSup (fun η : {x : ρ // x < ξ₀} =>
+        iSup fun i : ι => Order.succ (Ordinal.typein (· < ·) ((h2A i) η.1).val)) := rfl
+  have hbase : base < orderType θ := by simpa [base] using hbase_lt
+  let pick := pickParamAboveOrdinalRec hθ hθtype hlim hρθ
+    (fun i η => ((h2A i) η).val) ξ₀ hξU hbase
+  rcases exists_large_constant_picked_alpha0_inter hθ hθtype hlim hρθ
+      h2A ξ₀ hξU hbase (mk_bounded_subsets_lt_cof hκ hκθ hθ hθtype hθ_le hρ hbase) with
+    ⟨r, stages, _hrsub, hstages, hconst⟩
+  refine ⟨stages, hstages, pick, ?_⟩
+  exact is_delta_system_of_constant_picked_alpha0_inter hθ hθtype hlim
+    hρθ h2A ξ₀ hξU hbase_eq hbase hconst
+
+/-- Δ-system lemma, step 1: transfer from θ to ι, handling both unbounded and bounded cases. -/
+theorem delta_system_lemma_1 {κ : Cardinal} (hκ : ℵ₀ ≤ κ)
+    {θ : Type u} [LinearOrder θ] [WellFoundedLT θ] [IsWellOrder θ (· < ·)]
+    (hκθ : κ < Cardinal.mk θ) (hθ : Cardinal.IsRegular (Cardinal.mk θ))
+    (hθtype : Cardinal.ord (Cardinal.mk θ) = orderType θ)
+    (hθ_le : ∀ β < Cardinal.mk θ, β ^< κ < Cardinal.mk θ)
+    {ρ : Type u} [LinearOrder ρ] [WellFoundedLT ρ]
+    (hρθ : Cardinal.mk ρ < Cardinal.mk θ) (hρ : Cardinal.mk ρ < κ)
+    {ι : Type u} (hι : Cardinal.mk θ = Cardinal.mk ι) {A : ι → Set θ}
+    (h2A : ∀ i, RelIso (· < · : ρ → ρ → Prop) (Subrel (· < · : θ → θ → Prop) (A i))) :
+    ∃ t : Set ι, Cardinal.mk t = Cardinal.mk θ ∧
+      is_delta_system (fun i : t => A i.1) := by
+  by_cases hU : Set.Unbounded (· < ·) (⋃ i, A i)
+  · -- Unbounded case
+    classical
+    let hlim := isSuccLimit_orderType_of_isRegular hθ hθtype
+    rcases exists_minimal_parameter_with_alpha0_bound hκθ hθ hθtype hρθ hρ h2A hU with
+      ⟨ξ₀, hξU, _hξmin, hbase_lt⟩
+    let base : Ordinal :=
+      iSup (fun η : {x : ρ // x < ξ₀} =>
+        iSup fun i : ι => Order.succ (Ordinal.typein (· < ·) ((h2A i) η.1).val))
+    have hbase_eq : base =
+        iSup (fun η : {x : ρ // x < ξ₀} =>
+          iSup fun i : ι => Order.succ (Ordinal.typein (· < ·) ((h2A i) η.1).val)) := rfl
+    have hbase : base < orderType θ := by simpa [base] using hbase_lt
+    let pick := pickParamAboveOrdinalRec hθ hθtype hlim hρθ
+      (fun i η => ((h2A i) η).val) ξ₀ hξU hbase
+    have hinj : Function.Injective pick :=
+      pickParamAboveOrdinalRec_injective hθ hθtype hlim hρθ
+        (fun i η => ((h2A i) η).val) ξ₀ hξU hbase
+    rcases exists_large_constant_picked_alpha0_inter hθ hθtype hlim hρθ
+        h2A ξ₀ hξU hbase (mk_bounded_subsets_lt_cof hκ hκθ hθ hθtype hθ_le hρ hbase) with
+      ⟨r, stages, _hrsub, hstages, hconst⟩
+    let pickOnStages : stages → ι := fun x => pick x.1
+    have hinjOnSet : Function.Injective pickOnStages := by
+      intro x y h
+      apply Subtype.ext
+      exact hinj (by simpa [pickOnStages] using h)
+    have hds : is_delta_system (fun (x : stages) => A (pickOnStages x)) := by
+      simpa [pickOnStages] using
+        is_delta_system_of_constant_picked_alpha0_inter hθ hθtype hlim
+          hρθ h2A ξ₀ hξU hbase_eq hbase hconst
+    let t_img : Set ι := Set.range pickOnStages
+    have h_mk_img : Cardinal.mk t_img = Cardinal.mk θ := by
+      rw [Cardinal.mk_range_eq pickOnStages hinjOnSet, hstages]
+    have hds_img : is_delta_system (fun (x : t_img) => A x.1) := by
+      let e : stages ≃ t_img := Equiv.ofInjective pickOnStages hinjOnSet
+      have h_eq : (fun (x : stages) => A (pickOnStages x)) ∘ e.symm =
+          fun (x : t_img) => A x.1 := by
+        ext x
+        dsimp
+        have hval : pickOnStages (e.symm x) = x.1 :=
+          calc
+            pickOnStages (e.symm x) = (e (e.symm x)).1 := rfl
+            _ = x.1 := by rw [Equiv.apply_symm_apply e x]
+        rw [hval]
+      have hds_trans := (is_delta_system_precompose_iff
+        (A := fun (x : stages) => A (pickOnStages x)) e.symm).mp hds
+      simpa [h_eq] using hds_trans
+    exact ⟨t_img, h_mk_img, hds_img⟩
+  · -- Bounded case
+    rcases ((Set.not_unbounded_iff (s := ⋃ i, A i)).mp hU) with ⟨a, ha⟩
+    let U : Set θ := Set.Iio a
+    have hU_sub : (Set.iUnion A) ⊆ U := fun x hx => ha x hx
+    have hU_lt : Cardinal.mk U < Cardinal.mk θ := mk_Iio_lt_of_ord_eq a hθtype
+    have hAi_sub (i : ι) : A i ⊆ U := fun x hx =>
+      hU_sub (Set.mem_iUnion.mpr ⟨i, hx⟩)
+    have hAi_card (i : ι) : Cardinal.mk (A i) = Cardinal.mk ρ := by
+      have eqv : ρ ≃ A i := (h2A i).toEquiv
+      exact (Cardinal.mk_congr eqv).symm
+    let codomain := {s : Set θ // s ⊆ U ∧ Cardinal.mk s ≤ Cardinal.mk ρ}
+    let color : ι → codomain := fun i =>
+      ⟨A i, hAi_sub i, le_of_eq (hAi_card i)⟩
+    have h_aleph0_lt : ℵ₀ < Cardinal.mk θ := lt_of_le_of_lt hκ hκθ
+    have hmax_lt : max (Cardinal.mk U) ℵ₀ < Cardinal.mk θ :=
+      max_lt hU_lt h_aleph0_lt
+    have hcod_lt : Cardinal.mk codomain < (Cardinal.mk θ).ord.cof := by
+      calc
+        Cardinal.mk codomain ≤ max (Cardinal.mk U) ℵ₀ ^ (Cardinal.mk ρ) :=
+          Cardinal.mk_bounded_subset_le U (Cardinal.mk ρ)
+        _ ≤ max (Cardinal.mk U) ℵ₀ ^< κ := Cardinal.le_powerlt (max (Cardinal.mk U) ℵ₀) hρ
+        _ < Cardinal.mk θ := hθ_le _ hmax_lt
+        _ = (Cardinal.mk θ).ord.cof := hθ.cof_ord.symm
+    have hθ_inf : ℵ₀ ≤ Cardinal.mk θ := hκ.trans (le_of_lt hκθ)
+    have hdomain_le : Cardinal.mk θ ≤ Cardinal.mk ι := by
+      rw [hι]
+    rcases Cardinal.infinite_pigeonhole_card color (Cardinal.mk θ) hdomain_le hθ_inf hcod_lt with
+      ⟨root, hroot⟩
+    let t : Set ι := color ⁻¹' {root}
+    have ht_mk : Cardinal.mk t = Cardinal.mk θ := by
+      apply le_antisymm
+      · calc
+          Cardinal.mk t ≤ Cardinal.mk ι := Cardinal.mk_set_le t
+          _ = Cardinal.mk θ := hι.symm
+      · exact hroot
+    refine ⟨t, ht_mk, ?_⟩
+    refine ⟨root.1, ?_⟩
+    intro x y hxy
+    have hx : color x.1 = root := by
+      have hx' := x.2
+      rw [Set.mem_preimage] at hx'
+      simpa using hx'
+    have hy : color y.1 = root := by
+      have hy' := y.2
+      rw [Set.mem_preimage] at hy'
+      simpa using hy'
+    have hAx : A x.1 = root.1 := by
+      dsimp [color] at hx
+      simpa using congrArg Subtype.val hx
+    have hAy : A y.1 = root.1 := by
+      dsimp [color] at hy
+      simpa using congrArg Subtype.val hy
+    simp [hAx, hAy]
 
 end delta_system
 
