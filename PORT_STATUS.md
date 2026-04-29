@@ -168,6 +168,29 @@ The upstream project breaks into two large branches that meet in `zfc.lean`.
   `aleph_one_satisfies_spec`).
 - [x] Extend the `AlephOne` `pSet` tail through the remaining repo-local uniqueness wrapper
   after the non-countability step (`equiv_aleph_one_of_weak_spec`).
+- [x] Add the next `SetTheory` product-CCC helper for the uncountable product proof
+  (`disjoint_restrict_image_of_support_inter_subset`).
+- [x] Package the Δ-system root consequence for the product-CCC proof
+  (`pairwise_disjoint_restrict_image_of_delta_supports`,
+  `pairwiseDisjoint_restrict_image_range_of_delta_supports`).
+- [x] Package the cardinal lower-bound side of the restricted-image family step
+  (`mk_restrict_image_range_eq_of_delta_supports`,
+  `aleph0_lt_mk_restrict_image_range_of_delta_supports`).
+- [x] Package the openness side of the restricted-image family step
+  (`isOpen_of_mem_restrict_image_range`).
+- [x] Package the nonemptiness and final contradiction wrappers for the restricted-image family
+  (`nonempty_restrict_image_of_delta_member`, `nonempty_of_mem_restrict_image_range`,
+  `restrict_image_range_subset_open`, `restrict_image_range_subset_nonempty`,
+  `not_countable_of_lift_aleph0_lt_mk`,
+  `not_countable_restrict_image_range_of_delta_supports`,
+  `not_countable_of_restrict_image_range_ccc_contradiction`).
+- [x] Package the finite-root and root-subproduct CCC side of the same argument
+  (`finite_support_of_delta_member`, `finite_supports_of_delta_family`,
+  `finite_root_of_delta_supports`, `countable_chain_condition_root_subproduct_of_finite`,
+  `countable_chain_condition_root_subproduct_of_delta_supports`,
+  `countable_restrict_image_range_of_root_ccc`,
+  `countable_restrict_image_range_of_delta_supports`,
+  `false_of_uncountable_delta_supports_and_finite_root_ccc`).
 - [ ] Port the remaining term-model/completeness tail needed for upstream `completeness.lean`.
 - [ ] Port the forcing-side root files `pSet_ordinal.lean` and `set_theory.lean`.
 - [ ] Port the topology/regular-open/collapse stack.
@@ -364,6 +387,39 @@ Evidence-backed status:
   `x ↦ A (pick x) ∩ sub_α₀`, and `is_delta_system_of_constant_picked_alpha0_inter` turns the
   constant-color output plus the intersection-subset theorem into an actual delta-system on the
   selected stage set.
+- The product-CCC proof now has its central splicing/disjointness argument isolated as
+  `disjoint_restrict_image_of_support_inter_subset`: when two product-basis opens have support
+  intersection contained in a root `R`, their images under restriction to `R` are disjoint.
+- The next product-CCC helper is now isolated too: a Δ-system equation on supports gives a pairwise
+  disjoint family of restricted images, both in indexed form and as a `Set.range` family. This is
+  the reusable middle step between the Δ-system lemma and the final cardinality contradiction in
+  upstream `countable_chain_condition_pi`.
+- The cardinality half of that restricted-image step is also compiled: under the same Δ-system
+  support hypotheses, the restricted-image range has the lifted cardinality of the index type, and
+  therefore remains uncountable after universe lifting. This leaves the final product-CCC proof with
+  an explicit open/pairwise-disjoint uncountable family in the finite root subproduct.
+- The openness half of the same restricted-image family is now compiled as well: every member of the
+  restricted-image range is open in the root subproduct, by `isOpenMap_restrict` applied to the
+  corresponding `pi_basis` open.
+- The restricted-image family is now packaged in the form needed by the final contradiction too:
+  every member is nonempty/open, the range itself is uncountable whenever the original Δ-system is
+  uncountable, and a dedicated contradiction wrapper applies CCC on the finite root subproduct to
+  close the impossible countability conclusion.
+- The finite-root side of the same product-CCC argument is now compiled: selected product-basis
+  supports are finite, Δ-system roots of those supports are finite, finite root subproducts inherit
+  CCC from second-countability, and the resulting countability theorem is packaged both as a
+  root-CCC wrapper and as the final contradiction against an uncountable Δ-system.
+
+Longer-horizon route to upstream `countable_chain_condition_pi`:
+
+1. restore a public `delta_system_lemma_uncountable` wrapper from the existing compiled
+   `delta_system_lemma_1` / `delta_system_lemma_2` stack;
+2. apply that wrapper to supports of an uncountable `C ⊆ pi_basis β`, yielding a subtype-indexed
+   uncountable family and a finite root `R`;
+3. use the compiled restricted-image disjointness/cardinality helpers to construct an uncountable
+   pairwise-disjoint open family in the finite subproduct over `R`;
+4. contradict the hypothesis `∀ s, s.Finite → countable_chain_condition (∀ x : s, β x)` and close
+   `countable_chain_condition_pi` via `countable_chain_condition_of_topological_basis`.
 
 So the real near-term blockers are now concentrated on the forcing side:
 

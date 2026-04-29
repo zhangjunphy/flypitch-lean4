@@ -1722,6 +1722,282 @@ theorem isOpenMap_restrict (s : Set α) : IsOpenMap (fun f : ∀ x, β x => Set.
 theorem is_open_map_restrict (s : Set α) : IsOpenMap (fun f : ∀ x, β x => Set.restrict s f) :=
   isOpenMap_restrict (β := β) s
 
+/-- If two product-basis opens have support intersection contained in `R`, then their images under
+restriction to `R` remain disjoint. This isolates the splicing argument used in the uncountable
+product CCC proof. -/
+theorem disjoint_restrict_image_of_support_inter_subset
+    {C : Set (Set (∀ x, β x))} {s t : Set (∀ x, β x)} {R : Set α}
+    (hC : ∀ ⦃o⦄, o ∈ C → o ∈ pi_basis β)
+    (hdisj : C.PairwiseDisjoint id) (hsC : s ∈ C) (htC : t ∈ C) (hst : s ≠ t)
+    (hroot : support (β := β) s ∩ support (β := β) t ⊆ R) :
+    Disjoint ((fun f : ∀ x, β x => Set.restrict R f) '' s)
+      ((fun f : ∀ x, β x => Set.restrict R f) '' t) := by
+  rw [Set.disjoint_iff_inter_eq_empty]
+  ext f
+  constructor
+  · intro hf
+    rcases hf with ⟨⟨g₁, hg₁s, hg₁⟩, ⟨g₂, hg₂t, hg₂⟩⟩
+    have hEqR : Set.eqOn' g₁ g₂ R := by
+      rw [Set.eqOn'_iff]
+      exact hg₁.trans hg₂.symm
+    have hstDisj := hdisj hsC htC hst
+    have hg₁in : extend (β := β) g₁ g₂ (support (β := β) s) ∈ s := by
+      apply support_elim (β := β) (hC hsC) (f := g₁)
+      · intro x hx
+        simp [extend, hx]
+      · exact hg₁s
+    have hg₂in : extend (β := β) g₁ g₂ (support (β := β) s) ∈ t := by
+      apply support_elim (β := β) (hC htC) (f := g₂)
+      · intro x hx
+        by_cases hxs : x ∈ support (β := β) s
+        · have hxR : x ∈ R := hroot ⟨hxs, hx⟩
+          simpa [extend, hxs] using (hEqR hxR).symm
+        · simp [extend, hxs]
+      · exact hg₂t
+    exact hstDisj.le_bot ⟨hg₁in, hg₂in⟩
+  · intro hf
+    exact False.elim hf
+
+/-- A Δ-system root for supports gives pairwise disjoint restricted images. This is the indexed
+form of `disjoint_restrict_image_of_support_inter_subset` used in the product CCC proof. -/
+theorem pairwise_disjoint_restrict_image_of_delta_supports
+    {ι : Type u} {C : Set (Set (∀ x, β x))} {A : ι → Set (∀ x, β x)} {R : Set α}
+    (hC : ∀ ⦃o⦄, o ∈ C → o ∈ pi_basis β)
+    (hdisj : C.PairwiseDisjoint id) (hA : ∀ i, A i ∈ C)
+    (hAne : Pairwise fun i j => A i ≠ A j)
+    (hroot : ∀ ⦃i j : ι⦄, i ≠ j → support (β := β) (A i) ∩ support (β := β) (A j) = R) :
+    Pairwise fun i j =>
+      Disjoint ((fun f : ∀ x, β x => Set.restrict R f) '' A i)
+        ((fun f : ∀ x, β x => Set.restrict R f) '' A j) := by
+  intro i j hij
+  apply disjoint_restrict_image_of_support_inter_subset (β := β) hC hdisj (hA i) (hA j)
+    (hAne hij)
+  intro x hx
+  rw [hroot hij] at hx
+  exact hx
+
+/-- The restricted-image family coming from a Δ-system of supports is pairwise disjoint as a set of
+opens. -/
+theorem pairwiseDisjoint_restrict_image_range_of_delta_supports
+    {ι : Type u} {C : Set (Set (∀ x, β x))} {A : ι → Set (∀ x, β x)} {R : Set α}
+    (hC : ∀ ⦃o⦄, o ∈ C → o ∈ pi_basis β)
+    (hdisj : C.PairwiseDisjoint id) (hA : ∀ i, A i ∈ C)
+    (hAne : Pairwise fun i j => A i ≠ A j)
+    (hroot : ∀ ⦃i j : ι⦄, i ≠ j → support (β := β) (A i) ∩ support (β := β) (A j) = R) :
+    (Set.range fun i => (fun f : ∀ x, β x => Set.restrict R f) '' A i).PairwiseDisjoint id := by
+  intro s hs t ht hst
+  rcases hs with ⟨i, rfl⟩
+  rcases ht with ⟨j, rfl⟩
+  by_cases hij : i = j
+  · subst hij
+    exact (hst rfl).elim
+  · exact pairwise_disjoint_restrict_image_of_delta_supports (β := β) hC hdisj hA hAne hroot hij
+
+/-- The restricted-image family used in the product CCC proof consists of open sets in the finite
+root subproduct. -/
+theorem isOpen_of_mem_restrict_image_range
+    {ι : Type u} {C : Set (Set (∀ x, β x))} {A : ι → Set (∀ x, β x)} {R : Set α}
+    (hC : ∀ ⦃o⦄, o ∈ C → o ∈ pi_basis β) (hA : ∀ i, A i ∈ C)
+    {o : Set (∀ x : R, β x)}
+    (ho : o ∈ Set.range fun i => (fun f : ∀ x, β x => Set.restrict R f) '' A i) :
+    IsOpen o := by
+  rcases ho with ⟨i, rfl⟩
+  exact (isOpenMap_restrict (β := β) R) (A i) (isOpen_of_mem_pi_basis (β := β) (hC (hA i)))
+
+/-- The restricted image of every selected product-basis open is nonempty. -/
+theorem nonempty_restrict_image_of_delta_member
+    {ι : Type u} {C : Set (Set (∀ x, β x))} {A : ι → Set (∀ x, β x)} {R : Set α}
+    (hC : ∀ ⦃o⦄, o ∈ C → o ∈ pi_basis β) (hA : ∀ i, A i ∈ C) (i : ι) :
+    ((fun f : ∀ x, β x => Set.restrict R f) '' A i).Nonempty := by
+  rcases nonempty_of_mem_pi_basis (β := β) (hC (hA i)) with ⟨f, hf⟩
+  exact ⟨Set.restrict R f, f, hf, rfl⟩
+
+/-- Every member of the restricted-image range is nonempty. -/
+theorem nonempty_of_mem_restrict_image_range
+    {ι : Type u} {C : Set (Set (∀ x, β x))} {A : ι → Set (∀ x, β x)} {R : Set α}
+    (hC : ∀ ⦃o⦄, o ∈ C → o ∈ pi_basis β) (hA : ∀ i, A i ∈ C)
+    {o : Set (∀ x : R, β x)}
+    (ho : o ∈ Set.range fun i => (fun f : ∀ x, β x => Set.restrict R f) '' A i) :
+    o.Nonempty := by
+  rcases ho with ⟨i, rfl⟩
+  exact nonempty_restrict_image_of_delta_member (β := β) hC hA i
+
+/-- The restricted-image range is a family of open sets. -/
+theorem restrict_image_range_subset_open
+    {ι : Type u} {C : Set (Set (∀ x, β x))} {A : ι → Set (∀ x, β x)} {R : Set α}
+    (hC : ∀ ⦃o⦄, o ∈ C → o ∈ pi_basis β) (hA : ∀ i, A i ∈ C) :
+    Set.range (fun i => (fun f : ∀ x, β x => Set.restrict R f) '' A i) ⊆
+      {o : Set (∀ x : R, β x) | IsOpen o} := by
+  intro o ho
+  exact isOpen_of_mem_restrict_image_range (β := β) hC hA ho
+
+/-- The restricted-image range is a family of nonempty sets. -/
+theorem restrict_image_range_subset_nonempty
+    {ι : Type u} {C : Set (Set (∀ x, β x))} {A : ι → Set (∀ x, β x)} {R : Set α}
+    (hC : ∀ ⦃o⦄, o ∈ C → o ∈ pi_basis β) (hA : ∀ i, A i ∈ C) :
+    Set.range (fun i => (fun f : ∀ x, β x => Set.restrict R f) '' A i) ⊆
+      {o : Set (∀ x : R, β x) | o.Nonempty} := by
+  intro o ho
+  exact nonempty_of_mem_restrict_image_range (β := β) hC hA ho
+
+/-- The support of every selected product-basis open is finite. -/
+theorem finite_support_of_delta_member
+    {ι : Type u} {C : Set (Set (∀ x, β x))} {A : ι → Set (∀ x, β x)}
+    (hC : ∀ ⦃o⦄, o ∈ C → o ∈ pi_basis β) (hA : ∀ i, A i ∈ C) (i : ι) :
+    (support (β := β) (A i)).Finite :=
+  finite_support_of_pi_basis (β := β) (hC (hA i))
+
+/-- The supports of a selected product-basis family are pointwise finite. -/
+theorem finite_supports_of_delta_family
+    {ι : Type u} {C : Set (Set (∀ x, β x))} {A : ι → Set (∀ x, β x)}
+    (hC : ∀ ⦃o⦄, o ∈ C → o ∈ pi_basis β) (hA : ∀ i, A i ∈ C) :
+    ∀ i, (support (β := β) (A i)).Finite :=
+  finite_support_of_delta_member (β := β) hC hA
+
+/-- A Δ-system root of product-basis supports is finite once the index has at least two points. -/
+theorem finite_root_of_delta_supports
+    {ι : Type u} {C : Set (Set (∀ x, β x))} {A : ι → Set (∀ x, β x)} {R : Set α}
+    (hC : ∀ ⦃o⦄, o ∈ C → o ∈ pi_basis β) (hA : ∀ i, A i ∈ C)
+    (hι : (2 : Cardinal) ≤ Cardinal.mk ι)
+    (hroot : ∀ ⦃i j : ι⦄, i ≠ j → support (β := β) (A i) ∩ support (β := β) (A j) = R) :
+    R.Finite := by
+  exact delta_system.finite_root hι (finite_supports_of_delta_family (β := β) hC hA) hroot
+
+/-- A finite root subproduct is CCC when every coordinate is second-countable. -/
+theorem countable_chain_condition_root_subproduct_of_finite
+    [∀ x, SecondCountableTopology (β x)] {R : Set α} (hR : R.Finite) :
+    countable_chain_condition (∀ x : R, β x) := by
+  letI : Finite R := hR.to_subtype
+  letI : Countable R := Finite.to_countable
+  exact countable_chain_condition_pi_of_countable (β := fun x : R => β x)
+
+/-- A Δ-system root subproduct is CCC under second-countability. -/
+theorem countable_chain_condition_root_subproduct_of_delta_supports
+    [∀ x, SecondCountableTopology (β x)]
+    {ι : Type u} {C : Set (Set (∀ x, β x))} {A : ι → Set (∀ x, β x)} {R : Set α}
+    (hC : ∀ ⦃o⦄, o ∈ C → o ∈ pi_basis β) (hA : ∀ i, A i ∈ C)
+    (hι : (2 : Cardinal) ≤ Cardinal.mk ι)
+    (hroot : ∀ ⦃i j : ι⦄, i ≠ j → support (β := β) (A i) ∩ support (β := β) (A j) = R) :
+    countable_chain_condition (∀ x : R, β x) := by
+  exact countable_chain_condition_root_subproduct_of_finite (β := β)
+    (finite_root_of_delta_supports (β := β) hC hA hι hroot)
+
+/-- Under the same Δ-system support hypotheses, restriction to the root is injective on the indexed
+family of opens. This supplies the cardinal lower bound used in the final product CCC argument. -/
+theorem mk_restrict_image_range_eq_of_delta_supports
+    {ι : Type u} {C : Set (Set (∀ x, β x))} {A : ι → Set (∀ x, β x)} {R : Set α}
+    (hC : ∀ ⦃o⦄, o ∈ C → o ∈ pi_basis β)
+    (hdisj : C.PairwiseDisjoint id) (hA : ∀ i, A i ∈ C)
+    (hAne : Pairwise fun i j => A i ≠ A j)
+    (hroot : ∀ ⦃i j : ι⦄, i ≠ j → support (β := β) (A i) ∩ support (β := β) (A j) = R) :
+    Cardinal.lift.{u} (Cardinal.mk (Set.range fun i =>
+      (fun f : ∀ x, β x => Set.restrict R f) '' A i)) =
+      Cardinal.lift.{max u v} (Cardinal.mk ι) := by
+  apply Cardinal.mk_range_eq_of_injective
+  intro i j hij
+  by_contra hne
+  have hDisj := pairwise_disjoint_restrict_image_of_delta_supports (β := β) hC hdisj hA hAne hroot hne
+  rcases nonempty_of_mem_pi_basis (β := β) (hC (hA i)) with ⟨f, hf⟩
+  have hfLeft : Set.restrict R f ∈ (fun f : ∀ x, β x => Set.restrict R f) '' A i :=
+    ⟨f, hf, rfl⟩
+  have hfRight : Set.restrict R f ∈ (fun f : ∀ x, β x => Set.restrict R f) '' A j := by
+    simpa [hij] using hfLeft
+  exact hDisj.le_bot ⟨hfLeft, hfRight⟩
+
+theorem aleph0_lt_mk_restrict_image_range_of_delta_supports
+    {ι : Type u} {C : Set (Set (∀ x, β x))} {A : ι → Set (∀ x, β x)} {R : Set α}
+    (hC : ∀ ⦃o⦄, o ∈ C → o ∈ pi_basis β)
+    (hdisj : C.PairwiseDisjoint id) (hA : ∀ i, A i ∈ C)
+    (hAne : Pairwise fun i j => A i ≠ A j)
+    (hroot : ∀ ⦃i j : ι⦄, i ≠ j → support (β := β) (A i) ∩ support (β := β) (A j) = R)
+    (hι : ℵ₀ < Cardinal.mk ι) :
+    Cardinal.lift.{u} ℵ₀ < Cardinal.lift.{u} (Cardinal.mk (Set.range fun i =>
+      (fun f : ∀ x, β x => Set.restrict R f) '' A i)) := by
+  rw [mk_restrict_image_range_eq_of_delta_supports (β := β) hC hdisj hA hAne hroot]
+  simpa [Cardinal.lift_aleph0] using (Cardinal.lift_strictMono.{u, v} hι)
+
+/-- A set with lifted cardinality strictly above `ℵ₀` is not countable. -/
+theorem not_countable_of_lift_aleph0_lt_mk {γ : Type w} {s : Set γ}
+    (h : Cardinal.lift.{u} ℵ₀ < Cardinal.lift.{u} (Cardinal.mk s)) : ¬ s.Countable := by
+  intro hs
+  have hle : Cardinal.lift.{u} (Cardinal.mk s) ≤ Cardinal.lift.{u} ℵ₀ := by
+    rw [Cardinal.lift_le]
+    letI : Countable s := hs.to_subtype
+    exact Cardinal.mk_le_aleph0
+  exact not_lt_of_ge hle h
+
+/-- The restricted-image family produced from an uncountable Δ-system is not countable. -/
+theorem not_countable_restrict_image_range_of_delta_supports
+    {ι : Type u} {C : Set (Set (∀ x, β x))} {A : ι → Set (∀ x, β x)} {R : Set α}
+    (hC : ∀ ⦃o⦄, o ∈ C → o ∈ pi_basis β)
+    (hdisj : C.PairwiseDisjoint id) (hA : ∀ i, A i ∈ C)
+    (hAne : Pairwise fun i j => A i ≠ A j)
+    (hroot : ∀ ⦃i j : ι⦄, i ≠ j → support (β := β) (A i) ∩ support (β := β) (A j) = R)
+    (hι : ℵ₀ < Cardinal.mk ι) :
+    ¬ (Set.range fun i => (fun f : ∀ x, β x => Set.restrict R f) '' A i).Countable := by
+  intro hcount
+  have hlt := aleph0_lt_mk_restrict_image_range_of_delta_supports (β := β) hC hdisj hA
+    hAne hroot hι
+  have hle : Cardinal.lift.{u} (Cardinal.mk (Set.range fun i =>
+      (fun f : ∀ x, β x => Set.restrict R f) '' A i)) ≤ Cardinal.lift.{u} ℵ₀ := by
+    letI : Countable ↥(Set.range fun i => (fun f : ∀ x, β x => Set.restrict R f) '' A i) :=
+      hcount.to_subtype
+    simpa [Cardinal.lift_id] using
+      (Cardinal.lift_le.{u, max u v}.2 (Cardinal.mk_le_aleph0 (α :=
+        ↥(Set.range fun i => (fun f : ∀ x, β x => Set.restrict R f) '' A i))))
+  exact not_lt_of_ge hle hlt
+
+/-- CCC on the root subproduct makes the restricted-image family countable. -/
+theorem countable_restrict_image_range_of_root_ccc
+    {ι : Type u} {C : Set (Set (∀ x, β x))} {A : ι → Set (∀ x, β x)} {R : Set α}
+    (hC : ∀ ⦃o⦄, o ∈ C → o ∈ pi_basis β)
+    (hdisj : C.PairwiseDisjoint id) (hA : ∀ i, A i ∈ C)
+    (hAne : Pairwise fun i j => A i ≠ A j)
+    (hroot : ∀ ⦃i j : ι⦄, i ≠ j → support (β := β) (A i) ∩ support (β := β) (A j) = R)
+    (hccc : countable_chain_condition (∀ x : R, β x)) :
+    (Set.range fun i => (fun f : ∀ x, β x => Set.restrict R f) '' A i).Countable := by
+  exact hccc _ (fun ho hmem => isOpen_of_mem_restrict_image_range (β := β) hC hA hmem)
+    (pairwiseDisjoint_restrict_image_range_of_delta_supports (β := β) hC hdisj hA hAne hroot)
+
+/-- Under second-countability and a finite support root, the restricted-image family is countable. -/
+theorem countable_restrict_image_range_of_delta_supports
+    [∀ x, SecondCountableTopology (β x)]
+    {ι : Type u} {C : Set (Set (∀ x, β x))} {A : ι → Set (∀ x, β x)} {R : Set α}
+    (hC : ∀ ⦃o⦄, o ∈ C → o ∈ pi_basis β)
+    (hdisj : C.PairwiseDisjoint id) (hA : ∀ i, A i ∈ C)
+    (hAne : Pairwise fun i j => A i ≠ A j)
+    (hι : (2 : Cardinal) ≤ Cardinal.mk ι)
+    (hroot : ∀ ⦃i j : ι⦄, i ≠ j → support (β := β) (A i) ∩ support (β := β) (A j) = R) :
+    (Set.range fun i => (fun f : ∀ x, β x => Set.restrict R f) '' A i).Countable := by
+  exact countable_restrict_image_range_of_root_ccc (β := β) hC hdisj hA hAne hroot
+    (countable_chain_condition_root_subproduct_of_delta_supports (β := β) hC hA hι hroot)
+
+/-- The restricted-image range contradicts any CCC proof on the root subproduct. -/
+theorem not_countable_of_restrict_image_range_ccc_contradiction
+    {ι : Type u} {C : Set (Set (∀ x, β x))} {A : ι → Set (∀ x, β x)} {R : Set α}
+    (hC : ∀ ⦃o⦄, o ∈ C → o ∈ pi_basis β)
+    (hdisj : C.PairwiseDisjoint id) (hA : ∀ i, A i ∈ C)
+    (hAne : Pairwise fun i j => A i ≠ A j)
+    (hroot : ∀ ⦃i j : ι⦄, i ≠ j → support (β := β) (A i) ∩ support (β := β) (A j) = R)
+    (hι : ℵ₀ < Cardinal.mk ι)
+    (hccc : countable_chain_condition (∀ x : R, β x)) : False := by
+  exact not_countable_restrict_image_range_of_delta_supports (β := β) hC hdisj hA hAne hroot hι
+    (countable_restrict_image_range_of_root_ccc (β := β) hC hdisj hA hAne hroot hccc)
+
+/-- The finite-root CCC countability conclusion contradicts an uncountable Δ-system. -/
+theorem false_of_uncountable_delta_supports_and_finite_root_ccc
+    [∀ x, SecondCountableTopology (β x)]
+    {ι : Type u} {C : Set (Set (∀ x, β x))} {A : ι → Set (∀ x, β x)} {R : Set α}
+    (hC : ∀ ⦃o⦄, o ∈ C → o ∈ pi_basis β)
+    (hdisj : C.PairwiseDisjoint id) (hA : ∀ i, A i ∈ C)
+    (hAne : Pairwise fun i j => A i ≠ A j)
+    (hTwo : (2 : Cardinal) ≤ Cardinal.mk ι) (hUncountable : ℵ₀ < Cardinal.mk ι)
+    (hroot : ∀ ⦃i j : ι⦄, i ≠ j → support (β := β) (A i) ∩ support (β := β) (A j) = R) :
+    False := by
+  exact not_countable_restrict_image_range_of_delta_supports (β := β) hC hdisj hA hAne hroot
+    hUncountable
+    (countable_restrict_image_range_of_delta_supports (β := β) hC hdisj hA hAne hTwo hroot)
+
 end Pi
 
 end Flypitch
