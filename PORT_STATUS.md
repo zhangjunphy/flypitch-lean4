@@ -191,6 +191,27 @@ The upstream project breaks into two large branches that meet in `zfc.lean`.
   `countable_restrict_image_range_of_root_ccc`,
   `countable_restrict_image_range_of_delta_supports`,
   `false_of_uncountable_delta_supports_and_finite_root_ccc`).
+- [x] Add uncountability-derived public wrappers for the product-CCC contradiction
+  (`two_le_mk_of_aleph0_lt_mk`, `finite_root_of_uncountable_delta_supports`,
+  `countable_chain_condition_root_subproduct_of_uncountable_delta_supports`,
+  `countable_restrict_image_range_of_uncountable_delta_supports`,
+  `false_of_uncountable_delta_supports`).
+- [x] Add packaged Δ-system support wrappers that accept `delta_system.is_delta_system` directly
+  (`finite_root_of_uncountable_delta_support_system`,
+  `countable_chain_condition_root_subproduct_of_delta_support_system`,
+  `exists_false_of_uncountable_delta_support_system`).
+- [x] Add the indexed-family bridge from a pairwise-disjoint product-basis family with Δ-system
+  supports to countability of its index type
+  (`aleph0_lt_mk_of_not_countable`,
+  `not_aleph0_lt_mk_of_pairwiseDisjoint_indexed_pi_basis_of_delta_support_system`,
+  `countable_index_of_pairwiseDisjoint_pi_basis_of_delta_support_system`).
+- [x] Generalize the product-CCC contradiction chain from second-countability to an arbitrary
+  finite-root CCC hypothesis and isolate the final product-CCC wiring theorem conditional on the
+  public uncountable Δ-system lemma
+  (`exists_uncountable_fiber_of_countable_coloring`,
+  `exists_uncountable_fixed_finite_cardinal`,
+  `countable_index_of_pairwiseDisjoint_pi_basis_of_delta_support_system_of_finite_root_ccc`,
+  `countable_chain_condition_pi_of_delta_system_lemma_uncountable`).
 - [ ] Port the remaining term-model/completeness tail needed for upstream `completeness.lean`.
 - [ ] Port the forcing-side root files `pSet_ordinal.lean` and `set_theory.lean`.
 - [ ] Port the topology/regular-open/collapse stack.
@@ -409,17 +430,33 @@ Evidence-backed status:
   supports are finite, Δ-system roots of those supports are finite, finite root subproducts inherit
   CCC from second-countability, and the resulting countability theorem is packaged both as a
   root-CCC wrapper and as the final contradiction against an uncountable Δ-system.
+- A final layer of uncountability-derived wrappers now removes the separate two-point-index
+  hypothesis from the product-CCC contradiction chain, so downstream callers can use the single
+  assumption `ℵ₀ < Cardinal.mk ι` to obtain the finite-root CCC contradiction.
+- The same contradiction chain now has packaged wrappers that accept
+  `delta_system.is_delta_system (fun i => support β (A i))` directly, avoiding repeated manual
+  root extraction in downstream uses of `delta_system_lemma_1`.
+- The next indexed-family bridge is compiled too: any pairwise-disjoint indexed family of
+  product-basis opens whose supports form a Δ-system is countably indexed. This is the usable
+  contradiction shape for applying the support Δ-system machinery before the final
+  `countable_chain_condition_pi` wrapper.
+- The same indexed-family contradiction is now generalized to the exact finite-root hypothesis used
+  by upstream `countable_chain_condition_pi`: instead of requiring every coordinate to be
+  second-countable, it accepts `∀ R : Set α, R.Finite → countable_chain_condition (∀ x : R, β x)`.
+- The final topological-basis reduction is compiled as
+  `countable_chain_condition_pi_of_delta_system_lemma_uncountable`; the remaining input is the
+  arbitrary finite-family public Δ-system wrapper.
+- The first thinning helpers for that public wrapper now compile: an uncountable family colored by a
+  countable type has an uncountable fiber, and an uncountable finite-set family can be thinned to an
+  uncountable subfamily whose members have one fixed finite cardinality.
 
 Longer-horizon route to upstream `countable_chain_condition_pi`:
 
-1. restore a public `delta_system_lemma_uncountable` wrapper from the existing compiled
+1. finish the public `delta_system_lemma_uncountable` wrapper by completing the remaining bridge
+   from a fixed-cardinality uncountable finite-set family to the existing compiled
    `delta_system_lemma_1` / `delta_system_lemma_2` stack;
-2. apply that wrapper to supports of an uncountable `C ⊆ pi_basis β`, yielding a subtype-indexed
-   uncountable family and a finite root `R`;
-3. use the compiled restricted-image disjointness/cardinality helpers to construct an uncountable
-   pairwise-disjoint open family in the finite subproduct over `R`;
-4. contradict the hypothesis `∀ s, s.Finite → countable_chain_condition (∀ x : s, β x)` and close
-   `countable_chain_condition_pi` via `countable_chain_condition_of_topological_basis`.
+2. instantiate `countable_chain_condition_pi_of_delta_system_lemma_uncountable` with that public
+   wrapper to expose the final unconditional upstream-style `countable_chain_condition_pi` theorem.
 
 So the real near-term blockers are now concentrated on the forcing side:
 
