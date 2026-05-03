@@ -210,8 +210,18 @@ The upstream project breaks into two large branches that meet in `zfc.lean`.
   public uncountable Δ-system lemma
   (`exists_uncountable_fiber_of_countable_coloring`,
   `exists_uncountable_fixed_finite_cardinal`,
+  `exists_aleph_one_subset`,
+  `mk_iUnion_le_aleph_one_of_fixed_finite_cardinal`,
+  `mk_toType_ord_succ_aleph0`,
+  `ord_mk_toType_ord_succ_aleph0`,
+  `powerlt_aleph0_lt_succ_aleph0`,
+  `relIso_fin_of_finite_card`,
+  `relIso_ulift_fin_of_finite_card`,
+  `fixed_finite_delta_system_on_aleph_one`,
+  `delta_system_lemma_uncountable`,
   `countable_index_of_pairwiseDisjoint_pi_basis_of_delta_support_system_of_finite_root_ccc`,
-  `countable_chain_condition_pi_of_delta_system_lemma_uncountable`).
+  `countable_chain_condition_pi_of_delta_system_lemma_uncountable`,
+  `countable_chain_condition_pi`).
 - [ ] Port the remaining term-model/completeness tail needed for upstream `completeness.lean`.
 - [ ] Port the forcing-side root files `pSet_ordinal.lean` and `set_theory.lean`.
 - [ ] Port the topology/regular-open/collapse stack.
@@ -449,14 +459,16 @@ Evidence-backed status:
 - The first thinning helpers for that public wrapper now compile: an uncountable family colored by a
   countable type has an uncountable fiber, and an uncountable finite-set family can be thinned to an
   uncountable subfamily whose members have one fixed finite cardinality.
+- The public uncountable Δ-system wrapper and final product-CCC theorem now compile:
+  `delta_system_lemma_uncountable` thins an uncountable finite-set family through a fixed finite
+  cardinality and an `ℵ₁`-sized subtype before applying the compiled `delta_system_lemma_1` stack;
+  `countable_chain_condition_pi` instantiates the previously isolated product-CCC wiring theorem.
 
 Longer-horizon route to upstream `countable_chain_condition_pi`:
 
-1. finish the public `delta_system_lemma_uncountable` wrapper by completing the remaining bridge
-   from a fixed-cardinality uncountable finite-set family to the existing compiled
-   `delta_system_lemma_1` / `delta_system_lemma_2` stack;
-2. instantiate `countable_chain_condition_pi_of_delta_system_lemma_uncountable` with that public
-   wrapper to expose the final unconditional upstream-style `countable_chain_condition_pi` theorem.
+1. use the newly exposed `countable_chain_condition_pi` as the upstream product-CCC input for the
+   next topology/forcing files;
+2. continue with the remaining forcing-side route beyond `set_theory.lean`.
 
 So the real near-term blockers are now concentrated on the forcing side:
 

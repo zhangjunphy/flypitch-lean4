@@ -1100,6 +1100,224 @@ theorem exists_uncountable_fixed_finite_cardinal {α ι : Type u}
     exact i.2
   simpa [hncard] using hcard
 
+/-- Thin an uncountable type to a subtype of cardinal `ℵ₁`. -/
+theorem exists_aleph_one_subset {ι : Type u} (hι : ℵ₀ < Cardinal.mk ι) :
+    ∃ I : Set ι, Cardinal.mk I = Order.succ ℵ₀ := by
+  have hsucc : Order.succ ℵ₀ ≤ Cardinal.mk ι := by
+    rw [Order.succ_le_iff]
+    exact hι
+  exact Cardinal.le_mk_iff_exists_set.mp hsucc
+
+/-- The union of an `ℵ₁`-sized family of sets of one fixed finite cardinality has cardinality at
+most `ℵ₁`. -/
+theorem mk_iUnion_le_aleph_one_of_fixed_finite_cardinal {α ι : Type u}
+    {A : ι → Set α} {I : Set ι} {n : ℕ}
+    (hI : Cardinal.mk I = Order.succ ℵ₀)
+    (hcard : ∀ i : I, Cardinal.mk (A i.1) = n) :
+    Cardinal.mk (⋃ i : I, A i.1) ≤ Order.succ ℵ₀ := by
+  haveI : Nonempty I := by
+    by_contra hEmpty
+    haveI : IsEmpty I := not_nonempty_iff.mp hEmpty
+    have hzero : Cardinal.mk I = 0 := Cardinal.mk_eq_zero I
+    have hsucc0 : Order.succ ℵ₀ = 0 := by rw [← hI, hzero]
+    exact (ne_of_gt (lt_of_lt_of_le Cardinal.aleph0_pos (Order.lt_succ ℵ₀).le)) hsucc0
+  have hsup : (⨆ i : I, Cardinal.mk (A i.1)) = (n : Cardinal) := by
+    simp [hcard]
+  calc
+    Cardinal.mk (⋃ i : I, A i.1) ≤ Cardinal.mk I * ⨆ i : I, Cardinal.mk (A i.1) :=
+      Cardinal.mk_iUnion_le (fun i : I => A i.1)
+    _ = Order.succ ℵ₀ * n := by rw [hI, hsup]
+    _ ≤ Order.succ ℵ₀ := by
+      by_cases hn : (n : Cardinal) = 0
+      · rw [hn]
+        simp
+      · have hnle : (n : Cardinal) ≤ ℵ₀ := (Cardinal.natCast_lt_aleph0 (n := n)).le
+        have hnle' : (n : Cardinal) ≤ Order.succ ℵ₀ :=
+          hnle.trans (le_of_lt (Order.lt_succ ℵ₀))
+        rw [Cardinal.mul_eq_left (le_of_lt (Order.lt_succ ℵ₀)) hnle' hn]
+
+/-- The ordinal model of `ℵ₁` has cardinality `ℵ₁`. -/
+theorem mk_toType_ord_succ_aleph0 :
+    Cardinal.mk (Ordinal.ToType (Cardinal.ord (Order.succ ℵ₀))) = Order.succ ℵ₀ := by
+  exact (Cardinal.mk_toType _).trans (Cardinal.card_ord _)
+
+/-- The ordinal model of `ℵ₁` has the expected order type. -/
+theorem ord_mk_toType_ord_succ_aleph0 :
+    Cardinal.ord (Cardinal.mk (Ordinal.ToType (Cardinal.ord (Order.succ ℵ₀)))) =
+      orderType (Ordinal.ToType (Cardinal.ord (Order.succ ℵ₀))) := by
+  rw [mk_toType_ord_succ_aleph0]
+  exact (Ordinal.type_toType _).symm
+
+/-- The cardinal arithmetic hypothesis used by `delta_system_lemma_1` at `κ = ℵ₀` and `θ = ℵ₁`. -/
+theorem powerlt_aleph0_lt_succ_aleph0 :
+    ∀ β < Order.succ ℵ₀, β ^< ℵ₀ < Order.succ ℵ₀ := by
+  intro β hβ
+  have hble : β ≤ ℵ₀ := (Order.lt_succ_iff).mp hβ
+  have hpowle : β ^< ℵ₀ ≤ ℵ₀ := by
+    calc
+      β ^< ℵ₀ ≤ max β ℵ₀ := Cardinal.powerlt_aleph0_le β
+      _ ≤ ℵ₀ := max_le hble le_rfl
+  exact lt_of_le_of_lt hpowle (Order.lt_succ ℵ₀)
+
+/-- A finite subset of a linear order with cardinal `n` is order-isomorphic to `Fin n`. -/
+noncomputable def relIso_fin_of_finite_card {θ : Type u} [LinearOrder θ] {B : Set θ} (hfin : B.Finite)
+    {n : ℕ} (hcard : Cardinal.mk B = n) :
+    RelIso (fun x y : Fin n => x < y) (Subrel (fun x y : θ => x < y) B) := by
+  classical
+  letI : Fintype B := hfin.fintype
+  have hcardNat : Fintype.card B = n := by
+    have hmk : Cardinal.mk B = (Fintype.card B : Cardinal) := Cardinal.mk_fintype B
+    have hnat : (Fintype.card B : Cardinal) = n := hmk.symm.trans hcard
+    exact_mod_cast hnat
+  let oi : Fin n ≃o (Finset.univ : Finset B) :=
+    Finset.orderIsoOfFin (Finset.univ : Finset B) (by simpa using hcardNat)
+  let e : (Finset.univ : Finset B) ≃ B :=
+    { toFun := fun x => x.1
+      invFun := fun x => ⟨x, by simp⟩
+      left_inv := by intro x; ext; rfl
+      right_inv := by intro x; rfl }
+  let oi2 : (Finset.univ : Finset B) ≃o B :=
+    { e with
+      map_rel_iff' := by intro _ _; rfl }
+  let oi3 := oi.trans oi2
+  exact
+    { toFun := fun x => oi3 x
+      invFun := fun y => oi3.symm y
+      left_inv := by intro x; simp
+      right_inv := by intro y; simp
+      map_rel_iff' := by intro _ _; exact oi3.lt_iff_lt }
+
+/-- Universe-lifted variant of `relIso_fin_of_finite_card`, used when finite fibers must live in
+the same universe as an ambient ordinal model. -/
+noncomputable def relIso_ulift_fin_of_finite_card {θ : Type u} [LinearOrder θ] {B : Set θ}
+    (hfin : B.Finite) {n : ℕ} (hcard : Cardinal.mk B = n) :
+    RelIso (fun x y : ULift.{u} (Fin n) => x < y) (Subrel (fun x y : θ => x < y) B) := by
+  let e0 := relIso_fin_of_finite_card (θ := θ) hfin hcard
+  exact
+    { toFun := fun x => e0 x.down
+      invFun := fun y => ULift.up (e0.symm y)
+      left_inv := by intro x; cases x; simp
+      right_inv := by intro y; simp
+      map_rel_iff' := by intro x y; exact e0.map_rel_iff }
+
+/-- Fixed-finite-cardinality `ℵ₁` delta-system bridge. This is the central specialization of the
+general compiled Δ-system lemma needed for the public uncountable finite-family wrapper. -/
+theorem fixed_finite_delta_system_on_aleph_one {α ι : Type u} {A : ι → Set α} {I : Set ι} {n : ℕ}
+    (hI : Cardinal.mk I = Order.succ (ℵ₀ : Cardinal.{u}))
+    (hcard : ∀ i : I, Cardinal.mk (A i.1) = n) (hfin : ∀ i, (A i).Finite) :
+    ∃ t : Set I, Cardinal.mk t = Order.succ (ℵ₀ : Cardinal.{u}) ∧
+      is_delta_system (fun i : t => A i.1.1) := by
+  classical
+  let θ := Ordinal.ToType (Cardinal.ord (Order.succ (ℵ₀ : Cardinal.{u})))
+  have hUnion_le : Cardinal.mk (⋃ i : I, A i.1) ≤ Cardinal.mk θ := by
+    rw [mk_toType_ord_succ_aleph0]
+    exact mk_iUnion_le_aleph_one_of_fixed_finite_cardinal hI hcard
+  let e : (⋃ i : I, A i.1) ↪ θ := by
+    rw [Cardinal.le_def] at hUnion_le
+    exact Classical.choice hUnion_le
+  let B : I → Set θ := fun i =>
+    e '' ((Subtype.val : (⋃ i : I, A i.1) → α) ⁻¹' A i.1)
+  have hBcard (i : I) : Cardinal.mk (B i) = n := by
+    have himg : Cardinal.mk (B i) =
+        Cardinal.mk ((Subtype.val : (⋃ i : I, A i.1) → α) ⁻¹' A i.1) := by
+      dsimp [B]
+      rw [Cardinal.mk_image_eq]
+      exact e.injective
+    have hpre : Cardinal.mk ((Subtype.val : (⋃ i : I, A i.1) → α) ⁻¹' A i.1) =
+        Cardinal.mk (A i.1) := by
+      let f : ((Subtype.val : (⋃ i : I, A i.1) → α) ⁻¹' A i.1) ≃ A i.1 :=
+        { toFun := fun x => ⟨x.1.1, x.2⟩
+          invFun := fun x => ⟨⟨x.1, Set.mem_iUnion.mpr ⟨i, x.2⟩⟩, x.2⟩
+          left_inv := by intro x; rfl
+          right_inv := by intro x; rfl }
+      exact Cardinal.mk_congr f
+    exact himg.trans (hpre.trans (hcard i))
+  have h2B : ∀ i : I,
+      RelIso (fun x y : ULift.{u} (Fin n) => x < y)
+        (Subrel (fun x y : θ => x < y) (B i)) := by
+    intro i
+    have hfinPre : ((Subtype.val : (⋃ i : I, A i.1) → α) ⁻¹' A i.1).Finite := by
+      exact (hfin i.1).preimage (by intro x _ y _ hxy; exact Subtype.ext hxy)
+    have hfinB : (B i).Finite := by
+      dsimp [B]
+      exact hfinPre.image e
+    exact relIso_ulift_fin_of_finite_card hfinB (hBcard i)
+  have hθcard : Cardinal.mk θ = Order.succ (ℵ₀ : Cardinal.{u}) := mk_toType_ord_succ_aleph0
+  have hθI : Cardinal.mk θ = Cardinal.mk I := by rw [hθcard, hI]
+  have hρ_mk : Cardinal.mk (ULift.{u} (Fin n)) = (n : Cardinal.{u}) := by simp
+  have hρθ : Cardinal.mk (ULift.{u} (Fin n)) < Cardinal.mk θ := by
+    rw [hρ_mk, hθcard]
+    exact lt_of_lt_of_le Cardinal.natCast_lt_aleph0 (Order.lt_succ ℵ₀).le
+  have hρω : Cardinal.mk (ULift.{u} (Fin n)) < (ℵ₀ : Cardinal.{u}) := by
+    rw [hρ_mk]
+    exact Cardinal.natCast_lt_aleph0
+  have hκθ : (ℵ₀ : Cardinal.{u}) < Cardinal.mk θ := by
+    rw [hθcard]
+    exact Order.lt_succ ℵ₀
+  have hreg : (Cardinal.mk θ).IsRegular := by
+    rw [hθcard]
+    exact Cardinal.isRegular_succ (le_rfl : (ℵ₀ : Cardinal.{u}) ≤ ℵ₀)
+  rcases delta_system_lemma_1 (κ := (ℵ₀ : Cardinal.{u})) (θ := θ)
+      (ρ := ULift.{u} (Fin n)) (le_rfl : (ℵ₀ : Cardinal.{u}) ≤ ℵ₀)
+      hκθ hreg ord_mk_toType_ord_succ_aleph0
+      (by simpa [hθcard] using (powerlt_aleph0_lt_succ_aleph0 :
+        ∀ β < Order.succ (ℵ₀ : Cardinal.{u}),
+          β ^< (ℵ₀ : Cardinal.{u}) < Order.succ (ℵ₀ : Cardinal.{u})))
+      hρθ hρω hθI h2B with ⟨t, ht, hdt⟩
+  refine ⟨t, ?_, ?_⟩
+  · rwa [hθcard] at ht
+  · let valU : (⋃ i : I, A i.1) → α := Subtype.val
+    have hpreDelta : is_delta_system (fun i : t => valU ⁻¹' A i.1.1) := by
+      exact (is_delta_system_image (A := fun i : t => valU ⁻¹' A i.1.1) e.injective).1 hdt
+    have hsubset : ∀ i : t, A i.1.1 ⊆ Set.range valU := by
+      intro i x hx
+      exact ⟨⟨x, Set.mem_iUnion.mpr ⟨i.1, hx⟩⟩, rfl⟩
+    exact (is_delta_system_preimage_iff (A := fun i : t => A i.1.1)
+      (f := valU) Subtype.val_injective hsubset).1 hpreDelta
+
+/-- Public uncountable Δ-system lemma for finite families. -/
+theorem delta_system_lemma_uncountable {α ι : Type u}
+    (A : ι → Set α) (hι : ℵ₀ < Cardinal.mk ι) (hfin : ∀ i, (A i).Finite) :
+    ∃ t : Set ι, ℵ₀ < Cardinal.mk t ∧ is_delta_system (fun i : t => A i.1) := by
+  classical
+  rcases exists_uncountable_fixed_finite_cardinal A hι hfin with ⟨n, I₀, hI₀unc, hcardI₀⟩
+  rcases exists_aleph_one_subset hI₀unc with ⟨I₁, hI₁⟩
+  let I : Set ι := Set.range fun x : I₁ => (x.1 : ι)
+  have hI : Cardinal.mk I = Order.succ (ℵ₀ : Cardinal.{u}) := by
+    have hinj : Function.Injective (fun x : I₁ => (x.1 : ι)) := by
+      intro x y hxy
+      apply Subtype.ext
+      apply Subtype.ext
+      exact hxy
+    change Cardinal.mk (Set.range fun x : I₁ => (x.1 : ι)) = Order.succ (ℵ₀ : Cardinal.{u})
+    rw [Cardinal.mk_range_eq (fun x : I₁ => (x.1 : ι)) hinj]
+    exact hI₁
+  have hcardI : ∀ i : I, Cardinal.mk (A i.1) = n := by
+    intro i
+    rcases i.2 with ⟨j, hj⟩
+    simpa [hj] using hcardI₀ j.1
+  rcases fixed_finite_delta_system_on_aleph_one (A := A) hI hcardI hfin with ⟨t, ht, hdt⟩
+  refine ⟨Set.range fun x : t => (x.1 : ι), ?_, ?_⟩
+  · change ℵ₀ < Cardinal.mk (Set.range fun x : t => (x.1 : ι))
+    rw [Cardinal.mk_range_eq (fun x : t => (x.1 : ι))]
+    · rw [ht]
+      exact Order.lt_succ ℵ₀
+    · intro x y hxy
+      apply Subtype.ext
+      apply Subtype.ext
+      exact hxy
+  · rcases hdt with ⟨root, hroot⟩
+    refine ⟨root, ?_⟩
+    intro x y hxy
+    rcases x.2 with ⟨a, ha⟩
+    rcases y.2 with ⟨b, hb⟩
+    have hab : a ≠ b := by
+      intro hab
+      apply hxy
+      apply Subtype.ext
+      rw [← ha, ← hb, hab]
+    simpa [← ha, ← hb] using hroot hab
+
 end delta_system
 
 namespace Set
@@ -2226,6 +2444,26 @@ theorem countable_chain_condition_pi_of_delta_system_lemma_uncountable
       (β := β) hfinCCC hC hdisj hAt hAtne hΔAt
   have ht_le : Cardinal.mk t ≤ ℵ₀ := Cardinal.mk_le_aleph0_iff.mpr ht_count
   exact not_lt_of_ge ht_le ht_unc
+
+/-- Product CCC from finite-coordinate CCC. This is the upstream `countable_chain_condition_pi`
+theorem, now wired through the public uncountable Δ-system lemma. -/
+theorem countable_chain_condition_pi
+    (hfinCCC : ∀ R : Set α, R.Finite → countable_chain_condition (∀ x : R, β x)) :
+    countable_chain_condition (∀ x, β x) := by
+  exact countable_chain_condition_pi_of_delta_system_lemma_uncountable
+    (β := β)
+    (fun {ι : Type (max u v)} (A : ι → Set α) hι hfin => by
+      let A' : ι → Set (ULift.{max u v, u} α) := fun i => ULift.up '' A i
+      have hfin' : ∀ i, (A' i).Finite := by
+        intro i
+        exact (hfin i).image ULift.up
+      rcases delta_system.delta_system_lemma_uncountable A' hι hfin' with ⟨t, ht, hdt⟩
+      refine ⟨t, ht, ?_⟩
+      have hup : Function.Injective (ULift.up : α → ULift.{max u v, u} α) := by
+        intro x y hxy
+        exact congrArg ULift.down hxy
+      exact (delta_system.is_delta_system_image (A := fun i : t => A i.1) hup).1 hdt)
+    hfinCCC
 
 end Pi
 
