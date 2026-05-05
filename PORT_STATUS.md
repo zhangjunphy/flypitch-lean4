@@ -222,9 +222,22 @@ The upstream project breaks into two large branches that meet in `zfc.lean`.
   `countable_index_of_pairwiseDisjoint_pi_basis_of_delta_support_system_of_finite_root_ccc`,
   `countable_chain_condition_pi_of_delta_system_lemma_uncountable`,
   `countable_chain_condition_pi`).
+- [x] Start the topology/regular-open/collapse stack with compiling Lean 4 modules for
+  `regular_open_algebra.lean`, the opening `cantor_space.lean` finite-cylinder API, and
+  `collapse.lean` (`regular_opens`, `principal_open`, `standard_basis`, `collapse_poset`,
+  `collapse_space`, `collapse_algebra`).
+- [x] Extend the `CantorSpace` finite-cylinder tranche with upstream-style intersection normal forms
+  and the standard-basic-cylinder nonemptiness witness
+  (`principal_open_finset_eq_inter`, `co_principal_open_finset_eq_inter`,
+  `intersection_standard_basis_nonempty'`, `nonempty_of_standard_basic_cylinder`).
+- [x] Add the next `CantorSpace` standard-basis finite-intersection wrappers
+  (`standard_basis_reindex`, `intersection_standard_basis_nonempty`).
+- [x] Add the next `CantorSpace` cylinder-intersection compatibility helpers used by the standard
+  basis intersection proof (`ins₁_out₂_disjoint`, `out₁_ins₂_disjoint`,
+  `disjoint_union_of_inter_nonempty`).
 - [ ] Port the remaining term-model/completeness tail needed for upstream `completeness.lean`.
 - [ ] Port the forcing-side root files `pSet_ordinal.lean` and `set_theory.lean`.
-- [ ] Port the topology/regular-open/collapse stack.
+- [ ] Continue the topology/regular-open/collapse stack beyond the initial compiling tranche.
 - [ ] Port Boolean-valued models.
 - [ ] Reconnect both branches in `zfc`.
 - [ ] Re-establish `independence_of_CH`.
@@ -253,6 +266,9 @@ Every completed milestone must satisfy both checks:
 - `Flypitch/AlephOne.lean`
 - `Flypitch/Examples/Abel.lean`
 - `Flypitch/PSetOrdinal.lean`
+- `Flypitch/RegularOpenAlgebra.lean`
+- `Flypitch/CantorSpace.lean`
+- `Flypitch/Collapse.lean`
 
 ## Next Blocker
 
