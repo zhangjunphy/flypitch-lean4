@@ -242,10 +242,56 @@ theorem disjoint_union_of_inter_nonempty [DecidableEq α] {p_ins₁ p_out₁ p_i
   · exact out₁_ins₂_disjoint hS.1 hS.2 hb ha
   · exact (Finset.disjoint_left.mp h_disjoint₂ ha) hb
 
+theorem inter_standard_basic_cylinder_eq [DecidableEq α]
+    (p_ins₁ p_out₁ p_ins₂ p_out₂ : Finset α) :
+    principal_open_finset p_ins₁ ∩ co_principal_open_finset p_out₁ ∩
+      (principal_open_finset p_ins₂ ∩ co_principal_open_finset p_out₂) =
+        principal_open_finset (p_ins₁ ∪ p_ins₂) ∩ co_principal_open_finset (p_out₁ ∪ p_out₂) := by
+  ext S
+  constructor
+  · intro hS
+    constructor
+    · intro a ha
+      rw [Finset.mem_coe, Finset.mem_union] at ha
+      rcases ha with ha | ha
+      · exact hS.1.1 ha
+      · exact hS.2.1 ha
+    · intro a ha hSa
+      rw [Finset.mem_coe, Finset.mem_union] at ha
+      rcases ha with ha | ha
+      · exact hS.1.2 ha hSa
+      · exact hS.2.2 ha hSa
+  · intro hS
+    constructor
+    · constructor
+      · intro a ha
+        exact hS.1 (by simp [ha])
+      · intro a ha hSa
+        exact hS.2 (by simp [ha]) hSa
+    · constructor
+      · intro a ha
+        exact hS.1 (by simp [ha])
+      · intro a ha hSa
+        exact hS.2 (by simp [ha]) hSa
+
 /-- Standard finite cylinder basis for Cantor space. -/
 def standard_basis : Set (Set (Set α)) :=
   {T | ∃ p_ins p_out : Finset α,
     T = principal_open_finset p_ins ∩ co_principal_open_finset p_out ∧ Disjoint p_ins p_out} ∪ {∅}
+
+theorem inter_standard_basic_cylinder_mem_standard_basis
+    {p_ins₁ p_out₁ p_ins₂ p_out₂ : Finset α}
+    (h_disjoint₁ : Disjoint p_ins₁ p_out₁) (h_disjoint₂ : Disjoint p_ins₂ p_out₂)
+    (h_nonempty : (principal_open_finset p_ins₁ ∩ co_principal_open_finset p_out₁ ∩
+      (principal_open_finset p_ins₂ ∩ co_principal_open_finset p_out₂)).Nonempty) :
+    (principal_open_finset p_ins₁ ∩ co_principal_open_finset p_out₁ ∩
+      (principal_open_finset p_ins₂ ∩ co_principal_open_finset p_out₂)) ∈ standard_basis := by
+  classical
+  rw [inter_standard_basic_cylinder_eq]
+  rw [standard_basis]
+  left
+  exact ⟨p_ins₁ ∪ p_ins₂, p_out₁ ∪ p_out₂, rfl,
+    disjoint_union_of_inter_nonempty h_disjoint₁ h_disjoint₂ h_nonempty⟩
 
 @[simp] theorem principal_open_mem_standard_basis {a : α} :
     principal_open a ∈ (standard_basis : Set (Set (Set α))) := by
@@ -276,6 +322,94 @@ theorem empty_mem_standard_basis : (∅ : Set (Set α)) ∈ standard_basis := by
   rw [standard_basis]
   right
   rfl
+
+theorem standard_basis_inter_refinement {T₁ T₂ : Set (Set α)}
+    (h₁ : T₁ ∈ (standard_basis : Set (Set (Set α))))
+    (h₂ : T₂ ∈ (standard_basis : Set (Set (Set α)))) {S : Set α} (hS : S ∈ T₁ ∩ T₂) :
+    ∃ T₃ ∈ (standard_basis : Set (Set (Set α))), S ∈ T₃ ∧ T₃ ⊆ T₁ ∩ T₂ := by
+  classical
+  rw [standard_basis] at h₁ h₂
+  rcases h₁ with h₁ | h₁
+  · rcases h₂ with h₂ | h₂
+    · rcases h₁ with ⟨p_ins₁, p_out₁, rfl, hdisj₁⟩
+      rcases h₂ with ⟨p_ins₂, p_out₂, rfl, hdisj₂⟩
+      let T₃ := principal_open_finset p_ins₁ ∩ co_principal_open_finset p_out₁ ∩
+        (principal_open_finset p_ins₂ ∩ co_principal_open_finset p_out₂)
+      have hT₃nonempty : T₃.Nonempty := ⟨S, hS⟩
+      refine ⟨T₃, ?_, hS, ?_⟩
+      · exact inter_standard_basic_cylinder_mem_standard_basis hdisj₁ hdisj₂ hT₃nonempty
+      · intro R hR
+        exact ⟨hR.1, hR.2⟩
+    · rcases h₂ with rfl
+      exact False.elim hS.2
+  · rcases h₁ with rfl
+    exact False.elim hS.1
+
+theorem isOpen_of_mem_standard_basis {T : Set (Set α)}
+    (hT : T ∈ (standard_basis : Set (Set (Set α)))) : IsOpen T := by
+  classical
+  rw [standard_basis] at hT
+  rcases hT with hT | hT
+  · rcases hT with ⟨p_ins, p_out, rfl, _⟩
+    exact (isClopen_principal_open_finset p_ins).isOpen.inter
+      (isClopen_co_principal_open_finset p_out).isOpen
+  · rcases hT with rfl
+    exact isOpen_empty
+
+theorem sUnion_standard_basis_eq_univ : ⋃₀ (standard_basis : Set (Set (Set α))) = Set.univ := by
+  ext S
+  constructor
+  · intro _
+    trivial
+  · intro _
+    exact ⟨Set.univ, univ_mem_standard_basis, trivial⟩
+
+theorem isTopologicalBasis_standard_basis :
+    IsTopologicalBasis (standard_basis : Set (Set (Set α))) := by
+  classical
+  apply isTopologicalBasis_of_isOpen_of_nhds
+  · intro T hT
+    exact isOpen_of_mem_standard_basis hT
+  · intro S U hSU hU
+    rcases isOpen_pi_iff.1 hU S hSU with ⟨i, s, hs, hsub⟩
+    let p_ins : Finset α := i.filter fun a => S a
+    let p_out : Finset α := i.filter fun a => ¬ S a
+    refine ⟨principal_open_finset p_ins ∩ co_principal_open_finset p_out, ?_, ?_, ?_⟩
+    · rw [standard_basis]
+      left
+      refine ⟨p_ins, p_out, rfl, ?_⟩
+      rw [Finset.disjoint_left]
+      intro a haIn haOut
+      exact (Finset.mem_filter.mp haOut).2 (Finset.mem_filter.mp haIn).2
+    · constructor
+      · intro a ha
+        exact (Finset.mem_filter.mp ha).2
+      · intro a ha hSa
+        exact (Finset.mem_filter.mp ha).2 hSa
+    · intro R hR
+      apply hsub
+      intro a ha
+      by_cases hSa : S a
+      · have hRa : R a := hR.1 (Finset.mem_filter.mpr ⟨ha, hSa⟩)
+        have hEq : R a = S a := propext ⟨fun _ => hSa, fun _ => hRa⟩
+        simpa [hEq] using (hs a ha).2
+      · have hRa : ¬ R a := hR.2 (Finset.mem_filter.mpr ⟨ha, hSa⟩)
+        have hEq : R a = S a :=
+          propext ⟨fun hr => False.elim (hRa hr), fun hs => False.elim (hSa hs)⟩
+        simpa [hEq] using (hs a ha).2
+
+theorem is_topological_basis_standard_basis :
+    IsTopologicalBasis (standard_basis : Set (Set (Set α))) :=
+  isTopologicalBasis_standard_basis
+
+theorem countable_chain_condition_set : countable_chain_condition (Set α) := by
+  exact countable_chain_condition_pi (β := fun _ : α => Prop) (by
+    intro R hR
+    letI : Fintype R := hR.fintype
+    letI : DecidableEq R := Classical.decEq R
+    exact countable_chain_condition_of_countable (α := (R → Prop)) (by
+      rw [Cardinal.mk_fintype]
+      exact le_of_lt (Cardinal.natCast_lt_aleph0 (n := Fintype.card (R → Prop)))))
 
 end cantor_space
 

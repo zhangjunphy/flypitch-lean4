@@ -235,6 +235,22 @@ The upstream project breaks into two large branches that meet in `zfc.lean`.
 - [x] Add the next `CantorSpace` cylinder-intersection compatibility helpers used by the standard
   basis intersection proof (`ins₁_out₂_disjoint`, `out₁_ins₂_disjoint`,
   `disjoint_union_of_inter_nonempty`).
+- [x] Package the next `CantorSpace` standard-basis intersection closure step
+  (`inter_standard_basic_cylinder_eq`, `inter_standard_basic_cylinder_mem_standard_basis`).
+- [x] Package the `CantorSpace` standard-basis intersection refinement step used by
+  `IsTopologicalBasis` (`standard_basis_inter_refinement`).
+- [x] Add the next `CantorSpace` standard-basis theorem fields: open membership and space-covering
+  (`isOpen_of_mem_standard_basis`, `sUnion_standard_basis_eq_univ`).
+- [x] Package the `CantorSpace` finite cylinders as an actual product-topology basis
+  (`isTopologicalBasis_standard_basis`).
+- [x] Add the upstream-compatible `CantorSpace` basis alias and CCC endpoint
+  (`is_topological_basis_standard_basis`, `countable_chain_condition_set`).
+- [x] Extend the `Collapse` topology stack with upstream compatibility helpers and the first
+  collapse-space basis tranche (`poset_yoneda_iff`, `poset_coyoneda_iff`,
+  `Set.subset_iInter_iff`, `principal_open_empty`, `mem_compl_principal_open_iff`,
+  `compatible`, `union_f`, `union`, `inter_principal_open`, `principal_open_is_open`,
+  `principal_open_is_closed`, `is_regular_principal_open`, `collapse_space_basis`,
+  `isOpen_of_mem_collapse_space_basis`, `sUnion_collapse_space_basis_eq_univ`, `inclusion`).
 - [ ] Port the remaining term-model/completeness tail needed for upstream `completeness.lean`.
 - [ ] Port the forcing-side root files `pSet_ordinal.lean` and `set_theory.lean`.
 - [ ] Continue the topology/regular-open/collapse stack beyond the initial compiling tranche.
