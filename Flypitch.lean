@@ -15,4 +15,5 @@ import Flypitch.FOL.Theory
 import Flypitch.Henkin
 import Flypitch.LanguageExtension
 import Flypitch.PSetOrdinal
+import Flypitch.Collapse
 import Flypitch.SetTheory
