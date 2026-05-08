@@ -251,6 +251,99 @@ The upstream project breaks into two large branches that meet in `zfc.lean`.
   `compatible`, `union_f`, `union`, `inter_principal_open`, `principal_open_is_open`,
   `principal_open_is_closed`, `is_regular_principal_open`, `collapse_space_basis`,
   `isOpen_of_mem_collapse_space_basis`, `sUnion_collapse_space_basis_eq_univ`, `inclusion`).
+- [x] Package the `Collapse` collapse-space basis as an actual topological basis and add the
+  upstream singleton regular-open aliases (`collapse_space_basis_inter_refinement`,
+  `collapse_space_basis_spec`, `is_regular_singleton_regular_open`,
+  `is_regular_singleton_regular_open'`).
+- [x] Start the `Collapse` dense-principal-open tranche with the basis-level density helper
+  (`collapse_poset_dense_basis`).
+- [x] Add the first regular-open algebra order/lattice tranche and use it to finish the Collapse
+  principal-open density theorem (`regularOpenPartialOrder`, `regularOpenLattice`,
+  `regularOpenBoundedOrder`, `regularOpen_bot_lt`, `collapse_poset_dense`).
+- [x] Add the generic dense omega-closed subset API needed by the next Collapse forcing tranche
+  (`omega_closed`, `dense_subset`, `dense_omega_closed_subset`,
+  `has_dense_omega_closed_subset`, `nonzero_of_mem_dense_omega_closed_subset`,
+  `nonzero_infi_of_mem_dense_omega_closed_subset`).
+- [x] Promote regular opens to a complete lattice and package the principal regular opens as a
+  dense subset of the collapse algebra (`regularOpenSupSet`, `regularOpenCompleteLattice`,
+  `collapseAlgebraCompleteLattice`, `collapse_principal_opens`,
+  `inclusion_ne_bot`, `collapse_principal_opens_dense`).
+- [x] Finish the regular-open Boolean algebra packaging and expose it on the collapse algebra
+  (`regularOpenDistribLattice`, `regularOpenBooleanAlgebra`,
+  `regularOpenCompleteBooleanAlgebra`, `collapseAlgebraBooleanAlgebra`,
+  `collapseAlgebraCompleteBooleanAlgebra`).
+- [x] Add the first omega-chain compatibility helpers for principal collapse conditions
+  (`principal_open_nonempty`, `compatible_of_principal_open_subset`,
+  `compatible_of_inclusion_le`, `inclusion_le_of_chain`,
+  `compatible_of_inclusion_chain`).
+- [x] Package countable unions of compatible collapse-poset conditions at `ω₁`
+  (`omegaUnion_f`, `omegaUnion_f_dom`, `omegaUnion_f_fn_eq_of_mem`,
+  `mem_omegaUnion_f_iff_of_compatible`, `omegaUnion`,
+  `mem_omegaUnion_iff_of_compatible`, `mem_principal_open_omegaUnion_iff_of_compatible`).
+- [x] Finish the dense omega-closed principal-open package for the collapse algebra
+  (`inclusion_omegaUnion_eq_iInf_of_compatible`, `collapse_principal_opens_omega_closed`,
+  `collapse_principal_opens_dense_omega_closed`,
+  `collapse_algebra_has_dense_omega_closed_subset`).
+- [x] Add the nontrivial regular-open/collapse-algebra endpoint and expose the CH collapse algebra
+  target (`regularOpenNontrivial`, `collapseAlgebraNontrivial`, `empty_powerset_omega`,
+  `collapse_boolean_algebra`, `collapse_boolean_algebra_has_dense_omega_closed_subset`).
+- [x] Start Boolean-valued models with the core Boolean-valued set syntax and truth-value
+  operations (`bSet`, `bSet.empty`, `bv_eq`, `mem`, `subset`, and the first lattice proof
+  helpers).
+- [x] Extend the Boolean-valued model core through insertion, equality/subset wrappers, the
+  `pSet.not_equiv` split helper, and the first check-name/domain retraction API (`bSet.insert`,
+  `bv_eq_symm`, `bv_symm`, `bv_eq_refl`, `mem_empty`, `mem.mk`, `mem_insert_of_eq`,
+  `mem_insert_of_mem`, `mem_insert_self`, `mem_insert_empty`, `empty_subset`,
+  `subset_empty_intro`, `subset_ext`, `subset_intro`, `subset_elim`, `subset_elim_context`,
+  `subset_insert`, `insert_subset`, `insert_subset_iff`, `insert_empty_subset_iff`, `check`,
+  `dom`, `dom_check`, `check_injective`).
+- [x] Add the first check-name truth lemmas for the Boolean-valued model layer
+  (`check_bv_eq_of_equiv`, `check_eq`, `check_bv_eq_bot_of_not_equiv`, `check_mem`,
+  `check_bv_mem_bot_of_not_mem`, `check_not_mem`, `check_bv_eq_top_iff`,
+  `check_bv_eq_congr_of_equiv`, `check_bv_mem_top_iff`, `check_bv_mem_congr_of_equiv`,
+  `check_subset`, `check_bv_subset_top_of_subset`, `check_bv_subset_bot_of_not_subset`,
+  `check_bv_subset_top_iff`, `check_bv_subset_congr_of_equiv`).
+- [x] Add the next Boolean-valued model natural-deduction/extensionality tranche
+  (`lattice.bv_or_elim_left`, `lattice.bv_or_elim_right`, `lattice.bv_cases_left`,
+  `lattice.bv_cases_right`, `lattice.bv_specialize`, `lattice.bv_specialize_twice`,
+  `lattice.bv_specialize_left`, `lattice.bv_specialize_left_twice`,
+  `lattice.bv_specialize_right`, `lattice.bv_specialize_right_twice`,
+  `lattice.bv_imp_elim'`, `lattice.bv_have`, `lattice.bv_have_true`,
+  `lattice.bv_imp_iff`, `lattice.bv_biimp_iff`, `lattice.bv_Or_imp`,
+  `bv_eq_top_of_eq`, `bv_of_eq`, `bSet_axiom_of_extensionality`, `mem_ext`,
+  `mem_ext_of_biimp`, `B_ext`, `B_congr`, `B_ext_top`, `B_ext_bot`, `B_ext_inf`,
+  `B_ext_sup`, `B_ext_imp`, `B_ext_biimp`, `B_ext_iInf`, `B_ext_iSup`,
+  `bounded_forall`, `bounded_exists`, `subset_unfold'`, `bSet.rec_on'`, `bSet.rec'`).
+- [x] Port the Boolean-valued equality transitivity/substitution tranche
+  (`bv_eq_trans`, `bv_trans`, `subst_congr_mem_left`, `subst_congr_mem_left'`,
+  `subst_congr_mem_right`, `subst_congr_mem_right'`, `mem_of_mem_subset`,
+  `mem_of_mem_subset'`, `subst_congr_subset_left`, `subst_congr_subset_left'`,
+  `subst_congr_subset_right`, `subst_congr_subset_right'`, `bv_rw`, `B_ext_mem_left`,
+  `B_ext_mem_right`, `B_ext_subset_left`, `B_ext_subset_right`, `B_ext_eq_left`,
+  `B_ext_eq_right`, `B_ext_compl`, `B_ext_const`, `B_ext_subset_or_subset_left`,
+  `B_ext_subset_or_subset_right`, `B_congr_id`, `lattice.imp_imp_eq_imp_inf`).
+- [x] Port the Boolean-valued epsilon-induction principle (`bSet_epsilon_induction`,
+  `epsilon_induction`, `bv_exists_unique`, `forall_forall_reindex`).
+- [x] Port the Boolean-valued subset-builder compatibility tranche (`subset.mk`,
+  `subset.mk_subset`, `set_of_indicator`, `mem_set_of_indicator_iff`,
+  `mem_subset.mk_iff`, `mem_subset.mk_iff₂`, `mem_of_mem_subset.mk`).
+- [x] Port the Boolean-valued comprehension/separation tranche (`comprehend`,
+  `mem_comprehend_iff`, `mem_comprehend_iff₂`, `B_congr_comprehend`,
+  `comprehend_subset`, `bSet_axiom_of_comprehension`,
+  `subset_of_pointwise_bounded`, `set_of_indicator_eq_of_pointwise_eq`).
+- [x] Port the first Boolean-valued infinity/check-natural-number tranche (`check_empty_eq_empty`,
+  `omega`, `ofNat`, `omega_definite`, `ofNat_mem_omega`, `axiom_of_infinity_spec`,
+  `contains_empty`, `contains_succ`, `bSet_axiom_of_infinity`,
+  `bSet_axiom_of_infinity'`).
+- [x] Port the first Boolean-valued union tranche (`bv_union`, `mem_bv_union_unfold`,
+  `mem_bv_union_iff`,
+  `bv_union_spec'`, `bv_union_congr`, `B_congr_bv_union`,
+  `bv_union_spec_indexed`, `bv_union_spec`, `bv_union_spec''`,
+  `bSet_axiom_of_union`, `bSet_axiom_of_union_all`, `bSet_axiom_of_union_all_eq`).
+- [x] Port the first Boolean-valued powerset tranche (`bv_powerset`,
+  `mem_bv_powerset_iff_eq_subset_mk`, `subset_eq_subset_mk_of_subset`,
+  `bv_powerset_spec`, `mem_powerset_iff`, `bv_powerset_congr`,
+  `B_congr_bv_powerset`, `bSet_axiom_of_powerset`, `bSet_axiom_of_powerset'`).
 - [ ] Port the remaining term-model/completeness tail needed for upstream `completeness.lean`.
 - [ ] Port the forcing-side root files `pSet_ordinal.lean` and `set_theory.lean`.
 - [ ] Continue the topology/regular-open/collapse stack beyond the initial compiling tranche.
@@ -285,6 +378,7 @@ Every completed milestone must satisfy both checks:
 - `Flypitch/RegularOpenAlgebra.lean`
 - `Flypitch/CantorSpace.lean`
 - `Flypitch/Collapse.lean`
+- `Flypitch/BVM.lean`
 
 ## Next Blocker
 
@@ -495,6 +589,105 @@ Evidence-backed status:
   `delta_system_lemma_uncountable` thins an uncountable finite-set family through a fixed finite
   cardinality and an `ℵ₁`-sized subtype before applying the compiled `delta_system_lemma_1` stack;
   `countable_chain_condition_pi` instantiates the previously isolated product-CCC wiring theorem.
+- The `Collapse` topology stack now also packages the generated collapse-space basis as an
+  `IsTopologicalBasis`: `collapse_space_basis_inter_refinement` handles intersections of compatible
+  principal opens by their union and incompatible principal opens by emptiness, while
+  `collapse_space_basis_spec` proves the generated-topology basis fields. The singleton principal
+  open regularity aliases from upstream are now available too.
+- The next `Collapse` dense-principal-open step now compiles as `collapse_poset_dense_basis`, showing
+  that every nonempty member of the collapse-space basis contains a principal open via the
+  regular-open inclusion map. This is the basis-level input for the later full density theorem once
+  the regular-open algebra order/complete-Boolean structure is ported.
+- The regular-open layer now has the induced inclusion order, regularized-union/intersection
+  lattice operations, bounded order, and the `regularOpen_bot_lt` nonemptiness criterion. With those
+  instances available, `collapse_algebra` has been made reducible enough for typeclass search and
+  the upstream `collapse_poset_dense` theorem now compiles: every nonzero regular open in the
+  collapse algebra is refined by a principal open.
+- The first generic dense omega-closed interface for the collapse forcing tail now compiles:
+  `omega_closed`, `dense_subset`, `dense_omega_closed_subset`, and
+  `has_dense_omega_closed_subset` package the property shape, while
+  `nonzero_of_mem_dense_omega_closed_subset` and `nonzero_infi_of_mem_dense_omega_closed_subset`
+  expose the nonzero consequences needed when descending chains stay in such a dense subset.
+- The regular-open algebra now has arbitrary suprema by regularizing unions, exposed through
+  `regularOpenSupSet`, `regularOpen_sSup_unfold`, `regularOpen_isLUB_sSup`, and
+  `regularOpenCompleteLattice`. The collapse algebra has explicit local typeclass instances for
+  this complete-lattice structure, and the principal-open range is now packaged as a dense subset by
+  `collapse_principal_opens_dense` under the natural `[Nonempty Y]` extension hypothesis.
+- The regular-open Boolean-structure tranche is now packaged: pseudocomplement is the `Compl`
+  operation on `regular_opens`, double complement and the basic complement laws are compiled,
+  finite distributivity is proved by `regularOpen_inf_sup_left`, and the resulting
+  `regularOpenBooleanAlgebra` / `regularOpenCompleteBooleanAlgebra` instances are available.
+  The collapse algebra now exposes matching explicit instances
+  `collapseAlgebraBooleanAlgebra` and `collapseAlgebraCompleteBooleanAlgebra`.
+- The next prerequisite for proving omega-closure of principal opens now compiles: principal opens
+  are nonempty when `Y` is nonempty, inclusion of principal opens gives compatibility of the
+  underlying collapse conditions, and a decreasing omega-chain of inclusions yields pairwise
+  compatible collapse-poset conditions via `compatible_of_inclusion_chain`.
+- The compatible omega-union side of the `Collapse` forcing tail now compiles. `omegaUnion_f`
+  builds the countable partial-function union, `omegaUnion` packages it as an `ω₁` collapse
+  condition using regularity of `succ aleph0`, and
+  `mem_principal_open_omegaUnion_iff_of_compatible` identifies the principal open of a compatible
+  omega-union with the intersection of the stage principal opens.
+- The dense omega-closed collapse-algebra package now compiles. The key bridge is
+  `inclusion_omegaUnion_eq_iInf_of_compatible`, which identifies the compatible omega-union
+  principal open with the infimum of its stage inclusions; this gives
+  `collapse_principal_opens_omega_closed` and the public
+  `collapse_algebra_has_dense_omega_closed_subset` theorem under `[Nonempty Y]`.
+- The upstream `collapse.lean` tail is now represented by a Lean 4-native endpoint:
+  regular-open algebras are nontrivial over nonempty spaces, collapse algebras inherit that
+  nontriviality, `PSet.powerset omega` is explicitly inhabited by the empty subset, and
+  `collapse_boolean_algebra` names the CH forcing algebra with its complete Boolean algebra,
+  nontriviality, and dense omega-closed subset instances available.
+- `Flypitch/BVM.lean` now starts the Boolean-valued model layer. It includes the first reusable
+  complete-Boolean-algebra proof helpers, the core `bSet` inductive with Boolean equality,
+  membership, and subset truth values, empty-name laws, insertion constructors,
+  reflexivity/symmetry and subset extensionality wrappers, insert-membership/subset helpers, the
+  upstream `pSet.not_equiv` helper, and the first check-name/domain bridge (`check`, `dom`,
+  `dom_check`, `check_injective`). The
+  subset API now has direct introduction and elimination helpers for unpacking Boolean subset goals
+  below a context. It also now proves the first check-name truth facts: equivalent pre-sets have Boolean-equal check names,
+  non-equivalent pre-sets have Boolean equality `⊥`, ordinary pre-set membership gives
+  Boolean-valued membership of check names, ordinary non-membership gives Boolean-valued membership
+  `⊥`, ordinary subset gives Boolean-valued subset, ordinary non-subset gives Boolean-valued subset
+  `⊥`, and under `[Nontrivial 𝔹]` the top-valued check-name equality, membership, and subset facts
+  reflect back to the corresponding ordinary `pSet` facts. Check-name equality, membership, and
+  subset truth values now also respect ordinary `pSet` equivalence on either side. The next
+  natural-deduction helper tranche is now in place too, including disjunction elimination below
+  an extra context, supremum case splits, infimum specialization, context-characterizations of
+  Boolean implication/bi-implication, and the first membership-extensionality wrappers for
+  proving `x =ᴮ y` from pointwise membership equivalence. It also now has the first
+  `B_ext`/`B_congr` framework and closure lemmas for top, bottom, infimum, supremum,
+  implication, and bi-implication. The first bounded quantifier rewrites, `bounded_forall`
+  and `bounded_exists`, are also available, plus Lean 4 structural recursion wrappers matching
+  the upstream `rec_on'` / `rec'` API. The equality/substitution tranche now includes
+  transitivity of Boolean-valued equality, contextual transitivity, membership substitution on
+  either side, membership transport along Boolean-valued subset, subset substitution on either
+  side, a top-valued rewrite helper for extensional predicates, and the matching `B_ext`
+  wrappers for membership, subset, Boolean-valued equality, and complement. The Boolean-valued
+  equality/substitution helper layer also has constant-predicate extensionality, subset-comparability
+  extensionality, and an implication reassociation lemma. The Boolean-valued epsilon-induction theorem
+  and contextual wrapper now compile, and the Boolean-valued unique-existence connective is available,
+  giving later regularity/comprehension work reusable induction and quantifier infrastructure over
+  arbitrary Boolean-valued predicates that respect Boolean equality. The first two-variable bounded
+  universal reindexing theorem, `forall_forall_reindex`, is also available for later internal-chain
+  and Zorn-style arguments over members of one Boolean-valued set. The Boolean-valued subset-builder
+  layer now exposes `subset.mk`, its proof that the restricted name is a subset of the original
+  name, `set_of_indicator`, and upstream-compatible membership aliases for later comprehension and
+  separation-style arguments. The Boolean-valued comprehension/separation tranche now compiles:
+  `comprehend` restricts a name by an extensional predicate, the two membership rewrites expose
+  both indexed and bounded-existential forms, `B_congr_comprehend` proves the operation is
+  extensional in the source name, and `bSet_axiom_of_comprehension` packages the internal
+  separation axiom. Pointwise-bounded indicators now induce Boolean-valued subsets, with a
+  pointwise-equality corollary for indicator names. The first Boolean-valued infinity tranche is
+  also available: `omega` is the check-name of ordinary `PSet.omega`, `ofNat` embeds finite von
+  Neumann ordinals as Boolean-valued names, every `ofNat n` is a member of `omega`, and both the
+  indexed infinity witness `bSet_axiom_of_infinity` and the full quantified successor form
+  `bSet_axiom_of_infinity'` compile. The first Boolean-valued union prerequisite for later Zorn and
+  union axioms is now present too: `bv_union` flattens a Boolean-valued family of names, with
+  direct membership unfolding, the expected existential membership characterization, and both
+  indexed/global upper-bound specs showing every member of a name is internally a subset of its
+  Boolean-valued union. The Boolean-valued union axiom is now packaged as both a contextual witness
+  statement for each name and a top-equality global axiom statement.
 
 Longer-horizon route to upstream `countable_chain_condition_pi`:
 
@@ -504,19 +697,19 @@ Longer-horizon route to upstream `countable_chain_condition_pi`:
 
 So the real near-term blockers are now concentrated on the forcing side:
 
-1. continue the downstream `aleph_one.lean` `bSet` well-ordering section once the supporting
-   `bSet` infrastructure exists in Lean 4;
-2. continue `set_theory.lean` through the missing delta-system lemma chain and the resulting
-   uncountable-product CCC theorem `countable_chain_condition_pi`.
+1. continue the Boolean-valued-model files through transitivity/substitution congruence, bounded
+   quantifier rewrites, separation/replacement helpers, and the later `bvm_extras*` API;
+2. continue the downstream `aleph_one.lean` `bSet` well-ordering section once the supporting
+   `bSet` API is strong enough for the `a1` construction.
 
 The next Lean 4 tranche should therefore come from:
 
+- `bvm.lean`
+- `bvm_extras.lean`
 - `aleph_one.lean`
-- `set_theory.lean`
 
 Additional check against the original Lean 3 `src/aleph_one.lean`:
 
 - The current Lean 4 `Flypitch/AlephOne.lean` only covers the opening `pSet` section.
-- The entire downstream `bSet` well-ordering / `a1` construction from the Lean 3 file remains
-  unported, and the present repository does not yet contain the supporting `bSet` infrastructure
-  needed to continue that half of the file in-place.
+- The downstream `bSet` well-ordering / `a1` construction from the Lean 3 file remains unported;
+  the new `Flypitch/BVM.lean` core is the first prerequisite for continuing that half of the file.

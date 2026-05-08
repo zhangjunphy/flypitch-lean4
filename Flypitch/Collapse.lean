@@ -42,11 +42,43 @@ theorem subset_iInter_iff {α : Sort v} {β : Type u} {t : Set β} {s : α → S
 
 end Set
 
+/-! ### Dense omega-closed subsets -/
+
+/-- A subset is omega-closed if every nonzero decreasing omega-chain in it has infimum in it. -/
+def omega_closed {α : Type u} [CompleteLattice α] (D : Set α) : Prop :=
+  ∀ (s : ℕ → α), (∀ n, s n ∈ D) → (∀ n, ⊥ < s n) → (∀ n, s (n + 1) ≤ s n) →
+    (⨅ n, s n) ∈ D
+
+/-- A dense subset of an ordered type with bottom. -/
+def dense_subset {α : Type u} [PartialOrder α] [OrderBot α] (D : Set α) : Prop :=
+  ⊥ ∉ D ∧ ∀ x, ⊥ < x → ∃ y ∈ D, y ≤ x
+
+/-- A subset that is both dense and omega-closed. -/
+def dense_omega_closed_subset {α : Type u} [CompleteLattice α] (D : Set α) : Prop :=
+  dense_subset D ∧ omega_closed D
+
+/-- The type has a dense omega-closed subset. -/
+def has_dense_omega_closed_subset (α : Type u) [CompleteLattice α] : Prop :=
+  ∃ D : Set α, dense_omega_closed_subset D
+
+theorem nonzero_of_mem_dense_omega_closed_subset {α : Type u} [CompleteLattice α]
+    {x : α} {D : Set α} (hD : dense_omega_closed_subset D) (hx : x ∈ D) : ⊥ < x := by
+  exact bot_lt_iff_ne_bot.mpr fun hxbot => hD.1.1 (hxbot ▸ hx)
+
+theorem nonzero_infi_of_mem_dense_omega_closed_subset {α : Type u} [CompleteLattice α]
+    {s : ℕ → α} {D : Set α} (hD : dense_omega_closed_subset D)
+    (h_chain : ∀ n, s (n + 1) ≤ s n) (h_mem : ∀ n, s n ∈ D) :
+    ⊥ < ⨅ n, s n := by
+  apply nonzero_of_mem_dense_omega_closed_subset hD
+  exact hD.2 s h_mem (fun n => nonzero_of_mem_dense_omega_closed_subset hD (h_mem n)) h_chain
+
 /-! ### Collapse poset -/
 
 /-- A collapse poset: partial function `X ⇀ Y` with domain cardinality below `κ`. -/
 structure collapse_poset (X Y : Type u) (κ : Cardinal.{u}) where
+  /-- The underlying partial function. -/
   f : X →. Y
+  /-- The domain of the partial function has cardinality below `κ`. -/
   Hc : Cardinal.mk (PFun.Dom f) < κ
 
 namespace collapse_poset
@@ -97,9 +129,39 @@ theorem mem_compl_principal_open_iff {p : collapse_poset X Y κ} {g : X → Y} :
     g ∈ (principal_open p)ᶜ ↔ ∃ (a : X) (ha : a ∈ PFun.Dom p.f), g a ≠ fn p.f a ha :=
   mem_compl_principal_open
 
+theorem trivial_extension_mem_principal_open {p : collapse_poset X Y κ} {y : Y} :
+    (open Classical in fun (x : X) => if h : (p.f x).Dom then (p.f x).get h else y) ∈
+      principal_open p := by
+  rw [mem_principal_open_iff]
+  intro a b hb
+  rcases hb with ⟨h_dom, h_eq⟩
+  rw [dif_pos h_dom]
+  exact h_eq
+
+theorem principal_open_nonempty [Nonempty Y] (p : collapse_poset X Y κ) :
+    (principal_open p).Nonempty := by
+  obtain ⟨y⟩ := ‹Nonempty Y›
+  exact ⟨open Classical in fun x => if h : (p.f x).Dom then (p.f x).get h else y,
+    trivial_extension_mem_principal_open (p := p) (y := y)⟩
+
+/-- Two collapse-poset conditions are compatible when they agree on common domain points. -/
 def compatible (p q : collapse_poset X Y κ) : Prop :=
   ∀ a (hp : a ∈ PFun.Dom p.f) (hq : a ∈ PFun.Dom q.f), fn p.f a hp = fn q.f a hq
 
+theorem compatible.symm {p q : collapse_poset X Y κ} (h : compatible p q) : compatible q p := by
+  intro a hq hp
+  exact (h a hp hq).symm
+
+theorem compatible_of_principal_open_subset [Nonempty Y] {p q : collapse_poset X Y κ}
+    (hsubset : principal_open q ⊆ principal_open p) : compatible p q := by
+  intro a hp hq
+  rcases principal_open_nonempty q with ⟨g, hgq⟩
+  have hgp : g ∈ principal_open p := hsubset hgq
+  have hp_eq := (mem_principal_open_iff'.mp hgp) a hp
+  have hq_eq := (mem_principal_open_iff'.mp hgq) a hq
+  exact hp_eq.symm.trans hq_eq
+
+/-- The partial-function union used to combine compatible collapse-poset conditions. -/
 noncomputable def union_f (p q : collapse_poset X Y κ) : X →. Y := fun a => by
   classical
   exact if h : a ∈ PFun.Dom p.f then Part.some (fn p.f a h) else q.f a
@@ -114,14 +176,40 @@ theorem union_f_dom (p q : collapse_poset X Y κ) :
     exact ⟨fn p.f a hp, get_mem hp⟩
   · simp [union_f, hp, PFun.mem_dom]
 
-theorem trivial_extension_mem_principal_open {p : collapse_poset X Y κ} {y : Y} :
-    (open Classical in fun (x : X) => if h : (p.f x).Dom then (p.f x).get h else y) ∈
-      principal_open p := by
-  rw [mem_principal_open_iff]
-  intro a b hb
-  rcases hb with ⟨h_dom, h_eq⟩
-  rw [dif_pos h_dom]
-  exact h_eq
+/-- Countable union of a family of partial functions, as a partial function. -/
+noncomputable def omegaUnion_f (p : ℕ → collapse_poset X Y κ) : X →. Y := fun x =>
+  ⟨∃ n, x ∈ PFun.Dom (p n).f,
+    fun h => fn (p (Classical.choose h)).f x (Classical.choose_spec h)⟩
+
+theorem omegaUnion_f_dom (p : ℕ → collapse_poset X Y κ) :
+    PFun.Dom (omegaUnion_f p) = ⋃ n, PFun.Dom (p n).f := by
+  ext x
+  simp [omegaUnion_f, PFun.Dom]
+
+theorem omegaUnion_f_fn_eq_of_mem {p : ℕ → collapse_poset X Y κ}
+    (hcomp : ∀ m n, compatible (p m) (p n)) {x : X}
+    (h : x ∈ PFun.Dom (omegaUnion_f p)) {n : ℕ} (hx : x ∈ PFun.Dom (p n).f) :
+    fn (omegaUnion_f p) x h = fn (p n).f x hx := by
+  exact hcomp (Classical.choose h) n x (Classical.choose_spec h) hx
+
+theorem mem_omegaUnion_f_iff_of_compatible {p : ℕ → collapse_poset X Y κ}
+    (hcomp : ∀ m n, compatible (p m) (p n)) {x : X} {y : Y} :
+    y ∈ omegaUnion_f p x ↔ ∃ n, y ∈ (p n).f x := by
+  constructor
+  · intro hy
+    rcases hy with ⟨hdom, hval⟩
+    refine ⟨Classical.choose hdom, ?_⟩
+    rw [← hval]
+    exact get_mem (Classical.choose_spec hdom)
+  · rintro ⟨n, hyn⟩
+    have hx : x ∈ PFun.Dom (p n).f := (PFun.mem_dom _ _).mpr ⟨y, hyn⟩
+    have hdom : x ∈ PFun.Dom (omegaUnion_f p) := by
+      rw [omegaUnion_f_dom]
+      exact Set.mem_iUnion.mpr ⟨n, hx⟩
+    refine ⟨hdom, ?_⟩
+    change fn (omegaUnion_f p) x hdom = y
+    rw [omegaUnion_f_fn_eq_of_mem hcomp hdom hx]
+    exact mem_unique (get_mem hx) hyn
 
 /-! ### PFun singleton -/
 
@@ -167,6 +255,45 @@ theorem one_lt_succ_aleph0 : 1 < Order.succ Cardinal.aleph0 := by
 theorem zero_lt_succ_aleph0 : 0 < Order.succ Cardinal.aleph0 := by
   exact lt_trans (by norm_num : (0 : Cardinal) < 1) one_lt_succ_aleph0
 
+/-- Countable union of collapse-poset conditions at level `ω₁`. -/
+noncomputable def omegaUnion (p : ℕ → collapse_poset X Y (Order.succ Cardinal.aleph0)) :
+    collapse_poset X Y (Order.succ Cardinal.aleph0) :=
+  { f := omegaUnion_f p
+    Hc := by
+      rw [omegaUnion_f_dom]
+      rw [← (ULift.down_surjective :
+        Function.Surjective (ULift.down : ULift.{u} ℕ → ℕ)).iUnion_comp
+          (fun n => PFun.Dom (p n).f)]
+      exact (Cardinal.card_iUnion_lt_iff_forall_of_isRegular
+        (c := Order.succ Cardinal.aleph0)
+        (t := fun n : ULift.{u} ℕ => PFun.Dom (p n.down).f)
+        (Cardinal.isRegular_succ (le_rfl : Cardinal.aleph0 ≤ Cardinal.aleph0))
+        (by simp)).mpr
+        (fun n => (p n.down).Hc) }
+
+/-- Compatible omega-unions represent membership as membership in some stage. -/
+theorem mem_omegaUnion_iff_of_compatible
+    {p : ℕ → collapse_poset X Y (Order.succ Cardinal.aleph0)}
+    (hcomp : ∀ m n, compatible (p m) (p n)) {x : X} {y : Y} :
+    y ∈ (omegaUnion p).f x ↔ ∃ n, y ∈ (p n).f x :=
+  mem_omegaUnion_f_iff_of_compatible hcomp
+
+/-- A total function extends a compatible omega-union iff it extends every stage. -/
+theorem mem_principal_open_omegaUnion_iff_of_compatible
+    {p : ℕ → collapse_poset X Y (Order.succ Cardinal.aleph0)}
+    (hcomp : ∀ m n, compatible (p m) (p n)) {g : X → Y} :
+    g ∈ principal_open (omegaUnion p) ↔ ∀ n, g ∈ principal_open (p n) := by
+  rw [mem_principal_open_iff]
+  constructor
+  · intro hg n
+    rw [mem_principal_open_iff]
+    intro x y hy
+    exact hg x y ((mem_omegaUnion_iff_of_compatible hcomp).mpr ⟨n, hy⟩)
+  · intro hg x y hy
+    rcases (mem_omegaUnion_iff_of_compatible hcomp).mp hy with ⟨n, hyn⟩
+    exact (mem_principal_open_iff.mp (hg n)) x y hyn
+
+/-- Union of two collapse-poset conditions at level `ω₁`. -/
 noncomputable def union (p q : collapse_poset X Y (Order.succ Cardinal.aleph0)) :
     collapse_poset X Y (Order.succ Cardinal.aleph0) :=
   { f := union_f p q
@@ -259,7 +386,7 @@ theorem collapse_space_principal_open_isOpen
   apply isOpen_generateFrom_of_mem
   exact Set.mem_image_of_mem _ (Set.mem_univ _)
 
-@[simp] theorem principal_open_is_open
+theorem principal_open_is_open
     (p : collapse_poset X Y (Order.succ Cardinal.aleph0)) :
     @IsOpen (X → Y) (collapse_space X Y) (principal_open p) :=
   collapse_space_principal_open_isOpen p
@@ -296,6 +423,7 @@ theorem collapse_space_regular_principal_open
     @is_regular (X → Y) (collapse_space X Y) (principal_open p) :=
   collapse_space_regular_principal_open p
 
+/-- The collapse-space basis consisting of the empty set and all principal opens. -/
 def collapse_space_basis (X Y : Type u) : Set (Set (X → Y)) :=
   insert (∅ : Set (X → Y))
     (principal_open '' (Set.univ : Set (collapse_poset X Y (Order.succ Cardinal.aleph0))))
@@ -330,20 +458,250 @@ theorem sUnion_collapse_space_basis_eq_univ :
     · exact principal_open_mem_collapse_space_basis (empty (X := X) (Y := Y) zero_lt_succ_aleph0)
     · simp
 
+theorem collapse_space_basis_inter_refinement {T₁ T₂ : Set (X → Y)}
+    (hT₁ : T₁ ∈ collapse_space_basis X Y) (hT₂ : T₂ ∈ collapse_space_basis X Y)
+    {f : X → Y} (hf : f ∈ T₁ ∩ T₂) :
+    ∃ T₃ ∈ collapse_space_basis X Y, f ∈ T₃ ∧ T₃ ⊆ T₁ ∩ T₂ := by
+  rw [collapse_space_basis] at hT₁ hT₂
+  rcases hT₁ with rfl | hT₁
+  · exact False.elim hf.1
+  rcases hT₂ with rfl | hT₂
+  · exact False.elim hf.2
+  rcases hT₁ with ⟨p₁, _, rfl⟩
+  rcases hT₂ with ⟨p₂, _, rfl⟩
+  by_cases hcomp : compatible p₁ p₂
+  · refine ⟨principal_open (union p₁ p₂), ?_, ?_, ?_⟩
+    · exact principal_open_mem_collapse_space_basis (union p₁ p₂)
+    · rw [← inter_principal_open hcomp]
+      exact hf
+    · rw [← inter_principal_open hcomp]
+  · have hEmpty : principal_open p₁ ∩ principal_open p₂ = (∅ : Set (X → Y)) := by
+      ext g
+      constructor
+      · intro hg
+        exfalso
+        rw [compatible] at hcomp
+        push Not at hcomp
+        rcases hcomp with ⟨x, hp, hq, hneq⟩
+        have hg₁ := (mem_principal_open_iff'.mp hg.1) x hp
+        have hg₂ := (mem_principal_open_iff'.mp hg.2) x hq
+        exact hneq (hg₁.symm.trans hg₂)
+      · intro h
+        exact False.elim h
+    rw [hEmpty] at hf
+    exact False.elim hf
+
+theorem collapse_space_basis_spec :
+    @IsTopologicalBasis (X → Y) (collapse_space X Y) (collapse_space_basis X Y) := by
+  letI : TopologicalSpace (X → Y) := collapse_space X Y
+  refine ⟨?_, sUnion_collapse_space_basis_eq_univ (X := X) (Y := Y), ?_⟩
+  · intro T₁ hT₁ T₂ hT₂ f hf
+    exact collapse_space_basis_inter_refinement hT₁ hT₂ hf
+  · apply le_antisymm
+    · apply le_generateFrom
+      intro T hT
+      exact isOpen_of_mem_collapse_space_basis hT
+    · unfold collapse_space collapse_space_basis
+      apply generateFrom_anti
+      intro T hT
+      rcases hT with ⟨p, _, rfl⟩
+      exact Or.inr (Set.mem_image_of_mem _ (Set.mem_univ p))
+
+theorem is_regular_singleton_regular_open {x : X} {y : Y} :
+    @is_regular (X → Y) (collapse_space X Y)
+      (principal_open (singleton_collapse_poset x y one_lt_succ_aleph0)) :=
+  is_regular_principal_open _
+
+theorem is_regular_singleton_regular_open' {x : X} {y : Y} :
+    @is_regular (X → Y) (collapse_space X Y) {g : X → Y | g x = y} := by
+  rw [← singleton_collapse_poset_principal_open]
+  exact is_regular_singleton_regular_open
+
 /-! ### Collapse algebra -/
 
 /-- The regular-open algebra of the collapse space. -/
-def collapse_algebra (X Y : Type u) : Type u :=
+abbrev collapse_algebra (X Y : Type u) : Type u :=
   @regular_opens (X → Y) (collapse_space X Y)
+
+/-- Collapse algebras inherit coercion to their underlying regular-open sets. -/
+instance collapseAlgebraCoe (X Y : Type u) : Coe (collapse_algebra X Y) (Set (X → Y)) :=
+  @regularOpenCoe (X → Y) (collapse_space X Y)
+
+/-- Collapse algebras inherit the regular-open order. -/
+instance collapseAlgebraPartialOrder (X Y : Type u) : PartialOrder (collapse_algebra X Y) :=
+  @regularOpenPartialOrder (X → Y) (collapse_space X Y)
+
+/-- Collapse algebras inherit the regular-open complete lattice. -/
+instance collapseAlgebraCompleteLattice (X Y : Type u) : CompleteLattice (collapse_algebra X Y) :=
+  @regularOpenCompleteLattice (X → Y) (collapse_space X Y)
+
+/-- Collapse algebras inherit the regular-open Boolean algebra. -/
+instance collapseAlgebraBooleanAlgebra (X Y : Type u) : BooleanAlgebra (collapse_algebra X Y) :=
+  @regularOpenBooleanAlgebra (X → Y) (collapse_space X Y)
+
+/-- Collapse algebras inherit the regular-open complete Boolean algebra. -/
+instance collapseAlgebraCompleteBooleanAlgebra (X Y : Type u) :
+    CompleteBooleanAlgebra (collapse_algebra X Y) :=
+  @regularOpenCompleteBooleanAlgebra (X → Y) (collapse_space X Y)
+
+/-- Nonempty collapse spaces produce nontrivial collapse algebras. -/
+instance collapseAlgebraNontrivial (X Y : Type u) [Nonempty (X → Y)] :
+    Nontrivial (collapse_algebra X Y) :=
+  @regularOpenNontrivial (X → Y) (collapse_space X Y) ‹Nonempty (X → Y)›
 
 /-- Embedding of a collapse poset into the collapse algebra. -/
 def collapse_inclusion {X Y : Type u}
     (p : collapse_poset X Y (Order.succ Cardinal.aleph0)) : collapse_algebra X Y :=
   ⟨principal_open p, collapse_space_regular_principal_open p⟩
 
+/-- Upstream-compatible name for the collapse-poset embedding into the regular-open algebra. -/
 def inclusion {X Y : Type u}
     (p : collapse_poset X Y (Order.succ Cardinal.aleph0)) : collapse_algebra X Y :=
   collapse_inclusion p
+
+theorem compatible_of_inclusion_le [Nonempty Y]
+    {p q : collapse_poset X Y (Order.succ Cardinal.aleph0)}
+    (hsubset : inclusion q ≤ inclusion p) : compatible p q :=
+  compatible_of_principal_open_subset hsubset
+
+theorem inclusion_le_of_chain {p : ℕ → collapse_poset X Y (Order.succ Cardinal.aleph0)}
+    (hchain : ∀ n, inclusion (p (n + 1)) ≤ inclusion (p n)) :
+    ∀ {m n : ℕ}, m ≤ n → inclusion (p n) ≤ inclusion (p m) := by
+  intro m n hmn
+  induction hmn with
+  | refl => exact le_rfl
+  | @step k hmk ih =>
+      exact le_trans (hchain k) ih
+
+theorem compatible_of_inclusion_chain [Nonempty Y]
+    {p : ℕ → collapse_poset X Y (Order.succ Cardinal.aleph0)}
+    (hchain : ∀ n, inclusion (p (n + 1)) ≤ inclusion (p n)) (m n : ℕ) :
+    compatible (p m) (p n) := by
+  by_cases hmn : m ≤ n
+  · exact compatible_of_inclusion_le (inclusion_le_of_chain hchain hmn)
+  · have hnm : n ≤ m := Nat.le_of_not_ge hmn
+    exact (compatible_of_inclusion_le (inclusion_le_of_chain hchain hnm)).symm
+
+theorem inclusion_omegaUnion_eq_iInf_of_compatible
+    {p : ℕ → collapse_poset X Y (Order.succ Cardinal.aleph0)}
+    (hcomp : ∀ m n, compatible (p m) (p n)) :
+    inclusion (omegaUnion p) = ⨅ n, inclusion (p n) := by
+  apply le_antisymm
+  · apply le_iInf
+    intro n
+    change principal_open (omegaUnion p) ⊆ principal_open (p n)
+    intro g hg
+    exact (mem_principal_open_omegaUnion_iff_of_compatible hcomp).mp hg n
+  · change ((⨅ n, inclusion (p n) : collapse_algebra X Y) : Set (X → Y)) ⊆
+      principal_open (omegaUnion p)
+    intro g hg
+    rw [mem_principal_open_omegaUnion_iff_of_compatible hcomp]
+    intro n
+    exact (iInf_le (fun n => inclusion (p n)) n) hg
+
+/-- The set of principal regular opens inside the collapse algebra. -/
+def collapse_principal_opens (X Y : Type u) : Set (collapse_algebra X Y) :=
+  Set.range inclusion
+
+theorem inclusion_ne_bot [Nonempty Y]
+    (p : collapse_poset X Y (Order.succ Cardinal.aleph0)) : inclusion p ≠ ⊥ := by
+  intro hbot
+  obtain ⟨y⟩ := ‹Nonempty Y›
+  letI : TopologicalSpace (X → Y) := collapse_space X Y
+  have h_nonempty : ((inclusion p : collapse_algebra X Y) : Set (X → Y)).Nonempty := by
+    exact ⟨open Classical in fun x => if h : (p.f x).Dom then (p.f x).get h else y,
+      trivial_extension_mem_principal_open (p := p) (y := y)⟩
+  have hlt : (⊥ : collapse_algebra X Y) < inclusion p :=
+    (regularOpen_bot_lt (S := inclusion p)).mpr h_nonempty
+  exact (ne_of_lt hlt) hbot.symm
+
+/-- Every nonempty collapse-basis open contains a principal open. -/
+theorem collapse_poset_dense_basis {T : Set (X → Y)}
+    (hT : T ∈ collapse_space_basis X Y) (h_nonempty : T ≠ ∅) :
+    ∃ p : collapse_poset X Y (Order.succ Cardinal.aleph0), (inclusion p).1 ⊆ T := by
+  rw [collapse_space_basis] at hT
+  rcases hT with rfl | hT
+  · exact False.elim (h_nonempty rfl)
+  · rcases hT with ⟨p, _, rfl⟩
+    exact ⟨p, subset_rfl⟩
+
+/-- Principal opens are dense in the collapse regular-open algebra. -/
+theorem collapse_poset_dense {b : collapse_algebra X Y}
+    (hb : ⊥ < b) :
+    ∃ p : collapse_poset X Y (Order.succ Cardinal.aleph0), inclusion p ≤ b := by
+  letI : TopologicalSpace (X → Y) := collapse_space X Y
+  rcases (regularOpen_bot_lt (S := b)).mp hb with ⟨f, hf⟩
+  rcases collapse_space_basis_spec.exists_subset_of_mem_open hf (isOpen_of_is_regular b.2) with
+    ⟨T, hT_basis, hfT, hT_subset⟩
+  have hT_nonempty : T ≠ ∅ := by
+    intro hT_empty
+    rw [hT_empty] at hfT
+    exact hfT
+  rcases collapse_poset_dense_basis hT_basis hT_nonempty with ⟨p, hp⟩
+  exact ⟨p, subset_trans hp hT_subset⟩
+
+theorem collapse_principal_opens_dense [Nonempty Y] :
+    dense_subset (collapse_principal_opens X Y) := by
+  constructor
+  · rintro ⟨p, hp⟩
+    exact inclusion_ne_bot p hp
+  · intro b hb
+    rcases collapse_poset_dense (X := X) (Y := Y) hb with ⟨p, hp⟩
+    exact ⟨inclusion p, ⟨p, rfl⟩, hp⟩
+
+theorem collapse_principal_opens_omega_closed [Nonempty Y] :
+    omega_closed (collapse_principal_opens X Y) := by
+  intro s hmem _hnonzero hchain
+  choose p hp using hmem
+  have hchain_p : ∀ n, inclusion (p (n + 1)) ≤ inclusion (p n) := by
+    intro n
+    rw [hp (n + 1), hp n]
+    exact hchain n
+  have hcomp : ∀ m n, compatible (p m) (p n) :=
+    compatible_of_inclusion_chain hchain_p
+  refine ⟨omegaUnion p, ?_⟩
+  rw [inclusion_omegaUnion_eq_iInf_of_compatible hcomp]
+  congr
+  ext n
+  exact hp n
+
+theorem collapse_principal_opens_dense_omega_closed [Nonempty Y] :
+    dense_omega_closed_subset (collapse_principal_opens X Y) :=
+  ⟨collapse_principal_opens_dense, collapse_principal_opens_omega_closed⟩
+
+theorem collapse_algebra_has_dense_omega_closed_subset [Nonempty Y] :
+    has_dense_omega_closed_subset (collapse_algebra X Y) :=
+  ⟨collapse_principal_opens X Y, collapse_principal_opens_dense_omega_closed⟩
+
+/-- The empty subset of `omega`, viewed as a member of the pre-set powerset of `omega`. -/
+def empty_powerset_omega : (PSet.powerset (PSet.omega : pSet.{u})).Type :=
+  cast (pSet.powerset_type (x := (PSet.omega : pSet.{u}))).symm
+    (∅ : Set (PSet.omega : pSet.{u}).Type)
+
+instance nonempty_powerset_omega :
+    Nonempty (PSet.powerset (PSet.omega : pSet.{u})).Type :=
+  ⟨empty_powerset_omega⟩
+
+instance nonempty_aleph_one_to_powerset_omega :
+    Nonempty ((pSet.card_ex (Cardinal.aleph 1) : pSet.{u}).Type →
+      (PSet.powerset (PSet.omega : pSet.{u})).Type) :=
+  ⟨fun _ => empty_powerset_omega⟩
+
+/-- The collapse Boolean algebra used for the CH forcing construction. -/
+abbrev collapse_boolean_algebra : Type u :=
+  collapse_algebra ((pSet.card_ex (Cardinal.aleph 1) : pSet.{u}).Type)
+    (PSet.powerset (PSet.omega : pSet.{u})).Type
+
+instance collapseBooleanAlgebraCompleteBooleanAlgebra :
+    CompleteBooleanAlgebra (collapse_boolean_algebra.{u}) :=
+  inferInstance
+
+instance collapseBooleanAlgebraNontrivial : Nontrivial (collapse_boolean_algebra.{u}) :=
+  inferInstance
+
+theorem collapse_boolean_algebra_has_dense_omega_closed_subset :
+    has_dense_omega_closed_subset (collapse_boolean_algebra.{u}) :=
+  collapse_algebra_has_dense_omega_closed_subset
 
 end collapse_poset
 

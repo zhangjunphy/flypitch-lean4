@@ -40,7 +40,7 @@ def co_principal_open (x : α) : Set (Set α) := {S | x ∉ S}
 @[simp] theorem neg_principal_open {x : α} : co_principal_open x = (principal_open x)ᶜ := by
   rfl
 
-@[simp] theorem neg_co_principal_open {x : α} : (co_principal_open x)ᶜ = principal_open x := by
+theorem neg_co_principal_open {x : α} : (co_principal_open x)ᶜ = principal_open x := by
   ext S
   simp [principal_open, co_principal_open]
 
@@ -51,7 +51,7 @@ def opens_over (x : α) : Set (Set (Set α)) :=
 @[simp] theorem principal_open_mem_opens_over {x : α} : principal_open x ∈ opens_over x := by
   simp [opens_over]
 
-@[simp] theorem co_principal_open_mem_opens_over {x : α} : co_principal_open x ∈ opens_over x := by
+theorem co_principal_open_mem_opens_over {x : α} : co_principal_open x ∈ opens_over x := by
   simp [opens_over]
 
 @[simp] theorem univ_mem_opens_over {x : α} : (Set.univ : Set (Set α)) ∈ opens_over x := by
@@ -302,7 +302,7 @@ theorem inter_standard_basic_cylinder_mem_standard_basis
   ext S
   simp [principal_open, principal_open_finset, co_principal_open_finset]
 
-@[simp] theorem co_principal_open_mem_standard_basis {a : α} :
+theorem co_principal_open_mem_standard_basis {a : α} :
     co_principal_open a ∈ (standard_basis : Set (Set (Set α))) := by
   classical
   rw [standard_basis]

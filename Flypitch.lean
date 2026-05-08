@@ -4,6 +4,7 @@ import Flypitch.AlephOne
 import Flypitch.Compat.Core
 import Flypitch.Completion
 import Flypitch.BVTauto
+import Flypitch.BVM
 import Flypitch.Examples.Abel
 import Flypitch.FOL
 import Flypitch.FOL.Bounded
