@@ -152,6 +152,11 @@ files themselves.
   source Boolean-valued subsets, and the generated characteristic graph is now packaged as an
   internal injective function from `bv_powerset x` into `functions x 2` via
   `powerset_injects_into_functions`.
+  The current `BVMExtras` tranche closes the first direction of `mixing_lemma'`, the
+  `maximum_principle` witness step, checked-name ordinal reflection through `check_Ord`,
+  `empty_iff_forall_not_mem`, the bidirectional `mem_inj_inverse_iff`, and the
+  `eq_of_Ord_eps_iso_aux` contradiction bridge used by `eq_of_Ord_eps_iso`, plus
+  `injects_into_of_subset`.
 - Integration branch: `bfol`, `zfc`, `print_formula`, `summary`, and `independence_of_CH` remain unported/unreconnected.
 
 ## Current Frontier
@@ -164,8 +169,9 @@ Next useful tranches:
 1. Continue `bvm_extras.lean`/`bvm_extras2.lean` beyond the current pair, product, checked-name,
    ordinal-predicate, ordinal-intersection, relative-complement, regularity, ordinal comparison,
    ordinal-of-member, sub-ordinal predicate helpers, opening successor/limit ordinal helpers, and
-   finite ordinal-name support for `exists_two`; continue from the downstream `eps_iso` /
-   cardinal-comparison section now that the powerset-to-functions injection endpoint compiles.
+   finite ordinal-name support for `exists_two`; continue from the downstream relation/cardinal
+   comparison section. The remaining local `BVMExtras` holes are
+   `surjects_onto_of_injects_into`, `eps_iso_mono`, and `CH_iff_CH₂`.
 2. Continue the downstream `aleph_one.lean` `bSet` well-ordering and `a1` construction once enough
    supporting `bSet` API is available.
 3. Port `forcing.lean` and `forcing_CH.lean` after the Boolean-valued model layer exposes the
