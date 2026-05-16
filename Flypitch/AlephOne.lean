@@ -43,6 +43,13 @@ noncomputable def aleph_one : pSet.{u} :=
 theorem aleph_one_Ord : Ord aleph_one := by
   simpa [aleph_one, card_ex] using Ord_mk (Cardinal.ord (Cardinal.aleph 1))
 
+/-- The pre-set coding `aleph_2`. -/
+noncomputable def aleph_two : pSet.{u} :=
+  card_ex (Cardinal.aleph 2)
+
+theorem aleph_two_Ord : Ord aleph_two := by
+  simpa [aleph_two, card_ex] using Ord_mk (Cardinal.ord (Cardinal.aleph 2))
+
 /-- A weak characterization of `aleph_one`: an ordinal admitting no injection into `omega` and
 contained in every other such ordinal. -/
 def aleph_one_weak_Ord_spec (x : pSet.{u}) : Prop :=

@@ -78,7 +78,7 @@ the verified-surface summary below.
   ordinal-name facts needed by `exists_two`, including the forward and reverse
   `exists_two`/not-one bridges, plus the opening function/injection/surjection and
   epsilon-isomorphism predicate layer, and the checked-function preservation bridge.
-- [ ] Continue the `bvm_extras`/`bvm_extras2` Boolean-valued model compatibility layer.
+- [x] Continue the `bvm_extras`/`bvm_extras2` Boolean-valued model compatibility layer (BVMExtras.lean now complete with zero sorries, including `CH_iff_CH₂`).
 - [ ] Continue the downstream `aleph_one.lean` `bSet` well-ordering and `a1` construction.
 - [ ] Port `forcing.lean` and `forcing_CH.lean`.
 - [ ] Reconnect the logic and forcing branches through `bfol`, `zfc`, `print_formula`, and `summary`.
@@ -151,7 +151,11 @@ files themselves.
   membership iff, equality of generated characteristic graphs reflects back to equality of the
   source Boolean-valued subsets, and the generated characteristic graph is now packaged as an
   internal injective function from `bv_powerset x` into `functions x 2` via
-  `powerset_injects_into_functions`.
+  `powerset_injects_into_functions`. The epsilon-isomorphism layer now includes `eps_iso_mono`,
+  `eq_of_Ord_eps_iso_aux`, `larger_than_of_larger_than_and_injects`,
+  `not_larger_of_not_larger_and_injects`, `larger_than_empty`, `injects_into_refl`,
+  `bv_subset_refl`, and the equivalence `CH_iff_CH₂` of the two Continuum Hypothesis
+  formulations. BVMExtras.lean is now complete with zero `sorry` blocks.
 - Integration branch: `bfol`, `zfc`, `print_formula`, `summary`, and `independence_of_CH` remain unported/unreconnected.
 
 ## Current Frontier
@@ -161,13 +165,8 @@ forcing side, not the completed logic/completeness branch.
 
 Next useful tranches:
 
-1. Continue `bvm_extras.lean`/`bvm_extras2.lean` beyond the current pair, product, checked-name,
-   ordinal-predicate, ordinal-intersection, relative-complement, regularity, ordinal comparison,
-   ordinal-of-member, sub-ordinal predicate helpers, opening successor/limit ordinal helpers, and
-   finite ordinal-name support for `exists_two`; continue from the downstream `eps_iso` /
-   cardinal-comparison section now that the powerset-to-functions injection endpoint compiles.
-2. Continue the downstream `aleph_one.lean` `bSet` well-ordering and `a1` construction once enough
-   supporting `bSet` API is available.
+1. Continue the downstream `aleph_one.lean` `bSet` well-ordering and `a1` construction now that
+   the full BVMExtras API (through `CH_iff_CH₂`) is available.
 3. Port `forcing.lean` and `forcing_CH.lean` after the Boolean-valued model layer exposes the
    needed internal set-theoretic predicates and CH-specific constructions.
 4. Reconnect the logic and forcing branches through `bfol`, `zfc`, `print_formula`, and finally

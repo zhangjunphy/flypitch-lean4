@@ -7167,14 +7167,241 @@ lemma eps_iso_symm {x y : bSet 𝔹} {Γ : 𝔹} (H₁ : Γ ≤ Ord x) (H₂ : �
 lemma eps_iso_mono {x y z f : bSet 𝔹} {Γ : 𝔹}
     (H₁ : Γ ≤ Ord y) (H₂ : Γ ≤ z ⊆ᴮ y) (H₃ : Γ ≤ eps_iso y z f)
     (H₄ : Γ ≤ x ∈ᴮ y) (w' : bSet 𝔹) (Hw' : Γ ≤ pair x w' ∈ᴮ f) : Γ ≤ x ⊆ᴮ w' := by
-  -- Complex proof using regularity; port TBD
-  exact sorry
+  let φ : bSet 𝔹 → 𝔹 := fun v => ⨅ w : bSet 𝔹, lattice.imp (pair v w ∈ᴮ f) (w ∈ᴮ v)
+  have hφ_ext : B_ext φ := by
+    unfold φ
+    apply B_ext_iInf; intro w
+    apply B_ext_imp
+    · exact B_ext_pair_mem_left (x := w) (y := f)
+    · exact B_ext_mem_right w
+  have hC_empty : Γ ≤ (comprehend φ y =ᴮ (∅ : bSet 𝔹)) := by
+    have hDisj : Γ ⊓ ((comprehend φ y =ᴮ (∅ : bSet 𝔹))ᶜ) ≤ ⊥ := by
+      let Γ' : 𝔹 := Γ ⊓ ((comprehend φ y =ᴮ (∅ : bSet 𝔹))ᶜ)
+      have hΓ'Γ : Γ' ≤ Γ := inf_le_left
+      have hNonempty : Γ' ≤ ((comprehend φ y) =ᴮ (∅ : bSet 𝔹))ᶜ := inf_le_right
+      have hReg : Γ' ≤ ⨆ a : bSet 𝔹, a ∈ᴮ comprehend φ y ⊓
+          ⨅ b : bSet 𝔹, lattice.imp (b ∈ᴮ comprehend φ y) ((b ∈ᴮ a)ᶜ) :=
+        bSet_axiom_of_regularity_unfolded (comprehend φ y) hNonempty
+      have : Γ' ⊓ (⨆ a : bSet 𝔹, a ∈ᴮ comprehend φ y ⊓
+          ⨅ b : bSet 𝔹, lattice.imp (b ∈ᴮ comprehend φ y) ((b ∈ᴮ a)ᶜ)) ≤ ⊥ := by
+        apply lattice.bv_cases_right
+        intro a
+        let Δ : 𝔹 := Γ' ⊓ (a ∈ᴮ comprehend φ y ⊓
+          ⨅ b : bSet 𝔹, lattice.imp (b ∈ᴮ comprehend φ y) ((b ∈ᴮ a)ᶜ))
+        have haMemC : Δ ≤ a ∈ᴮ comprehend φ y := by
+          dsimp [Δ]; exact inf_le_right.trans inf_le_left
+        have haMin : Δ ≤ ⨅ b : bSet 𝔹, lattice.imp (b ∈ᴮ comprehend φ y) ((b ∈ᴮ a)ᶜ) := by
+          dsimp [Δ]; exact inf_le_right.trans inf_le_right
+        have haMemY : Δ ≤ a ∈ᴮ y := by
+          apply mem_of_mem_subset' comprehend_subset haMemC
+        have haCases : Δ ≤ ⨆ w : bSet 𝔹, w ∈ᴮ y ⊓ (a =ᴮ w ⊓ φ w) :=
+          (mem_comprehend_iff₂ hφ_ext).mp haMemC
+        have haOrd : Δ ≤ Ord a :=
+          Ord_of_mem_Ord haMemY (inf_le_left.trans (hΓ'Γ.trans H₁))
+        have hTotal : Δ ≤ is_total y z f :=
+          is_total_of_is_function (is_function_of_eps_iso (inf_le_left.trans (hΓ'Γ.trans H₃)))
+        have haTotal : Δ ≤ ⨆ w : bSet 𝔹, w ∈ᴮ z ⊓ pair a w ∈ᴮ f := by
+          have hImp : Δ ≤ lattice.imp (a ∈ᴮ y) (⨆ w : bSet 𝔹, w ∈ᴮ z ⊓ pair a w ∈ᴮ f) :=
+            hTotal.trans (iInf_le _ a)
+          exact lattice.bv_context_apply hImp haMemY
+        apply (le_inf le_rfl haTotal).trans
+        apply lattice.bv_cases_right
+        intro wa
+        let Δa : 𝔹 := Δ ⊓ (wa ∈ᴮ z ⊓ pair a wa ∈ᴮ f)
+        have hwaMemZ : Δa ≤ wa ∈ᴮ z := by
+          dsimp [Δa]; exact inf_le_right.trans inf_le_left
+        have hPairAMem : Δa ≤ pair a wa ∈ᴮ f := by
+          dsimp [Δa]; exact inf_le_right.trans inf_le_right
+        have hSubsetZ : Δa ≤ z ⊆ᴮ y :=
+          calc
+            Δa ≤ Δ := inf_le_left
+            _ ≤ Γ' := inf_le_left
+            _ ≤ Γ := hΓ'Γ
+            _ ≤ z ⊆ᴮ y := H₂
+        have hwaMemY : Δa ≤ wa ∈ᴮ y :=
+          mem_of_mem_subset' hSubsetZ hwaMemZ
+        have hwaOrd : Δa ≤ Ord wa :=
+          Ord_of_mem_Ord hwaMemY (inf_le_left.trans (inf_le_left.trans (hΓ'Γ.trans H₁)))
+        have hφa : Δa ≤ φ a := by
+          have : Δa ≤ ⨆ w : bSet 𝔹, w ∈ᴮ y ⊓ (a =ᴮ w ⊓ φ w) :=
+            inf_le_left.trans haCases
+          apply (le_inf le_rfl this).trans
+          apply lattice.bv_cases_right
+          intro w'
+          let Δ' : 𝔹 := Δa ⊓ (w' ∈ᴮ y ⊓ (a =ᴮ w' ⊓ φ w'))
+          have hEq : Δ' ≤ a =ᴮ w' := by
+            dsimp [Δ']; exact inf_le_right.trans (inf_le_right.trans inf_le_left)
+          have hφw' : Δ' ≤ φ w' := by
+            dsimp [Δ']; exact inf_le_right.trans (inf_le_right.trans inf_le_right)
+          have heq' : Δ' ≤ w' =ᴮ a := bv_symm hEq
+          exact (le_inf heq' hφw').trans (hφ_ext w' a)
+        have hφaUnfold : Δa ≤ ⨅ w : bSet 𝔹, lattice.imp (pair a w ∈ᴮ f) (w ∈ᴮ a) :=
+          hφa.trans (by unfold φ; exact le_rfl)
+        have hwaInA : Δa ≤ wa ∈ᴮ a := by
+          have hImp : Δa ≤ lattice.imp (pair a wa ∈ᴮ f) (wa ∈ᴮ a) :=
+            hφaUnfold.trans (iInf_le _ wa)
+          exact lattice.bv_context_apply hImp hPairAMem
+        have hwaInC : Δa ≤ wa ∈ᴮ comprehend φ y := by
+          rw [mem_comprehend_iff₂ hφ_ext]
+          apply lattice.bv_use wa
+          apply le_inf
+          · exact hwaMemY
+          · apply le_inf bv_refl
+            unfold φ
+            apply le_iInf; intro w
+            apply lattice.bv_imp_intro
+            let Δb : 𝔹 := Δa ⊓ pair wa w ∈ᴮ f
+            change Δb ≤ w ∈ᴮ wa
+            have hStrong : Δa ≤ strong_eps_hom y z f :=
+              calc
+                Δa ≤ Δ := inf_le_left
+                _ ≤ Γ' := inf_le_left
+                _ ≤ Γ := hΓ'Γ
+                _ ≤ strong_eps_hom y z f := strong_eps_hom_of_eps_iso H₃
+            have hMem : Δb ≤ pair a wa ∈ᴮ f := by
+              dsimp [Δb, Δa]; exact inf_le_left.trans hPairAMem
+            have hMemWa : Δb ≤ wa ∈ᴮ a := by
+              dsimp [Δb]; exact inf_le_left.trans hwaInA
+            have hMemW : Δb ≤ pair wa w ∈ᴮ f := by
+              dsimp [Δb]; exact inf_le_right
+            have haMemYΔb : Δb ≤ a ∈ᴮ y := by
+              dsimp [Δb, Δa, Δ]; exact inf_le_left.trans (inf_le_left.trans haMemY)
+            have hwaMemYΔb : Δb ≤ wa ∈ᴮ y := by
+              dsimp [Δb, Δa]; exact inf_le_left.trans hwaMemY
+            have hIsFunc : Δb ≤ is_function y z f :=
+              calc
+                Δb ≤ Δa := inf_le_left
+                _ ≤ Δ := inf_le_left
+                _ ≤ Γ' := inf_le_left
+                _ ≤ Γ := hΓ'Γ
+                _ ≤ is_function y z f := is_function_of_eps_iso H₃
+            have hwInZ : Δb ≤ w ∈ᴮ z :=
+              mem_codomain_of_is_function hMemW hIsFunc
+            have hwaInZ : Δb ≤ wa ∈ᴮ z :=
+              inf_le_left.trans hwaMemZ
+            have hImageIff : (Δb ≤ wa ∈ᴮ a) ↔ (Δb ≤ w ∈ᴮ wa) :=
+              strong_eps_hom_unfold (inf_le_left.trans hStrong)
+                wa hwaMemYΔb a haMemYΔb w hwInZ wa hwaInZ hMemW hMem
+            exact hImageIff.mp hMemWa
+        have hContra : Δa ≤ (wa ∈ᴮ a)ᶜ := by
+          have hMinImp : Δa ≤ lattice.imp (wa ∈ᴮ comprehend φ y) ((wa ∈ᴮ a)ᶜ) :=
+            (inf_le_left.trans haMin).trans (iInf_le _ wa)
+          exact lattice.bv_context_apply hMinImp hwaInC
+        exact bv_absurd hwaInA hContra
+      have : Γ' ≤ ⊥ :=
+        calc
+          Γ' ≤ Γ' ⊓ (⨆ a : bSet 𝔹, a ∈ᴮ comprehend φ y ⊓
+            ⨅ b : bSet 𝔹, lattice.imp (b ∈ᴮ comprehend φ y) ((b ∈ᴮ a)ᶜ)) :=
+            le_inf le_rfl hReg
+          _ ≤ ⊥ := this
+      exact this
+    have : Γ ⊓ (comprehend φ y =ᴮ (∅ : bSet 𝔹))ᶜ ≤ ⊥ := hDisj
+    calc
+      Γ = Γ ⊓ ⊤ := by simp
+      _ = Γ ⊓ ((comprehend φ y =ᴮ (∅ : bSet 𝔹)) ⊔ (comprehend φ y =ᴮ (∅ : bSet 𝔹))ᶜ) := by simp
+      _ = Γ ⊓ (comprehend φ y =ᴮ (∅ : bSet 𝔹)) ⊔ Γ ⊓ (comprehend φ y =ᴮ (∅ : bSet 𝔹))ᶜ := by
+        rw [inf_sup_left]
+      _ ≤ (comprehend φ y =ᴮ (∅ : bSet 𝔹)) ⊔ ⊥ := sup_le_sup inf_le_right this
+      _ = (comprehend φ y =ᴮ (∅ : bSet 𝔹)) := by simp
+  have hxNotSubW' : Γ ⊓ (x ⊆ᴮ w')ᶜ ≤ ⊥ := by
+    let Ω : 𝔹 := Γ ⊓ (x ⊆ᴮ w')ᶜ
+    have hΩΓ : Ω ≤ Γ := inf_le_left
+    have hNotSub : Ω ≤ (x ⊆ᴮ w')ᶜ := inf_le_right
+    have hxOrd : Ω ≤ Ord x :=
+      Ord_of_mem_Ord (hΩΓ.trans H₄) (hΩΓ.trans H₁)
+    have hw'Ord : Ω ≤ Ord w' := by
+      have hw'MemZ : Ω ≤ w' ∈ᴮ z :=
+        mem_codomain_of_is_function (hΩΓ.trans Hw')
+          (is_function_of_eps_iso (hΩΓ.trans H₃))
+      have hw'MemY : Ω ≤ w' ∈ᴮ y :=
+        mem_of_mem_subset' (hΩΓ.trans H₂) hw'MemZ
+      exact Ord_of_mem_Ord hw'MemY (hΩΓ.trans H₁)
+    have hw'InX : Ω ≤ w' ∈ᴮ x :=
+      Ord.lt_of_not_le hxOrd hw'Ord hNotSub
+    have hFunc : Ω ≤ is_function y z f :=
+      is_function_of_eps_iso (hΩΓ.trans H₃)
+    have hxInC : Ω ≤ x ∈ᴮ comprehend φ y := by
+      rw [mem_comprehend_iff₂ hφ_ext]
+      apply lattice.bv_use x
+      apply le_inf
+      · exact hΩΓ.trans H₄
+      · apply le_inf bv_refl
+        unfold φ
+        apply le_iInf; intro w
+        apply lattice.bv_imp_intro
+        let Ωw : 𝔹 := Ω ⊓ pair x w ∈ᴮ f
+        change Ωw ≤ w ∈ᴮ x
+        have hwEq : Ωw ≤ w =ᴮ w' :=
+          have hIsFunc : Ω ≤ is_func f :=
+            is_func_of_is_func' (is_func'_of_is_function hFunc)
+          eq_of_is_func_of_eq (inf_le_left.trans hIsFunc) bv_refl
+            (inf_le_right) (inf_le_left.trans hΩΓ |>.trans Hw')
+        have hw'memX : Ωw ≤ w' ∈ᴮ x := inf_le_left.trans hw'InX
+        exact subst_congr_mem_left' (bv_symm hwEq) hw'memX
+    have hxNotInC : Ω ≤ (x ∈ᴮ comprehend φ y)ᶜ := by
+      have hCEqEmpty : Ω ≤ comprehend φ y =ᴮ (∅ : bSet 𝔹) := hΩΓ.trans hC_empty
+      have hDisj : Ω ⊓ (x ∈ᴮ comprehend φ y) ≤ ⊥ := by
+        calc
+          Ω ⊓ (x ∈ᴮ comprehend φ y) ≤ x ∈ᴮ (∅ : bSet 𝔹) :=
+            subst_congr_mem_right' (inf_le_left.trans hCEqEmpty) inf_le_right
+          _ = ⊥ := mem_empty _
+          _ ≤ ⊥ := le_rfl
+      rw [le_compl_iff_disjoint_right]
+      exact disjoint_iff.mpr (eq_bot_iff.mpr hDisj)
+    exact bv_absurd hxInC hxNotInC
+  have hCompl : Γ ≤ ((x ⊆ᴮ w')ᶜ)ᶜ :=
+    le_compl_iff_disjoint_right.mpr (disjoint_iff.mpr (eq_bot_iff.mpr hxNotSubW'))
+  simpa [compl_compl] using hCompl
 
 lemma eq_of_Ord_eps_iso_aux {x y : bSet 𝔹} {Γ : 𝔹}
     (Hx_ord : Γ ≤ Ord x) (Hy_ord : Γ ≤ Ord y)
     (H_eps_iso : Γ ≤ ⨆ f, eps_iso y x f) (H_mem : Γ ≤ x ∈ᴮ y) : Γ ≤ ⊥ := by
-  -- Port TBD: full proof uses eps_iso_mono and Ord.trichotomy
-  exact sorry
+  have hBot : Γ ⊓ (⨆ f, eps_iso y x f) ≤ ⊥ := by
+    apply lattice.bv_cases_right
+    intro f
+    let Γf : 𝔹 := Γ ⊓ eps_iso y x f
+    have hEpsIso : Γf ≤ eps_iso y x f := inf_le_right
+    have hFunc : Γf ≤ is_function y x f := is_function_of_eps_iso hEpsIso
+    have hTotal : Γf ≤ is_total y x f := is_total_of_is_function hFunc
+    have hTotalAtX : Γf ≤ lattice.imp (x ∈ᴮ y) (⨆ w : bSet 𝔹, w ∈ᴮ x ⊓ pair x w ∈ᴮ f) :=
+      hTotal.trans (iInf_le _ x)
+    have hxMemY : Γf ≤ x ∈ᴮ y := inf_le_left.trans H_mem
+    have hSupPair : Γf ≤ ⨆ w : bSet 𝔹, w ∈ᴮ x ⊓ pair x w ∈ᴮ f :=
+      lattice.bv_context_apply hTotalAtX hxMemY
+    -- Case split on the inner supremum to get a specific w
+    have hInner : Γf ⊓ (⨆ w : bSet 𝔹, w ∈ᴮ x ⊓ pair x w ∈ᴮ f) ≤ ⊥ := by
+      apply lattice.bv_cases_right
+      intro w
+      let Γw : 𝔹 := Γf ⊓ (w ∈ᴮ x ⊓ pair x w ∈ᴮ f)
+      have hWmemX : Γw ≤ w ∈ᴮ x := inf_le_right.trans inf_le_left
+      have hPairXWMemF : Γw ≤ pair x w ∈ᴮ f := inf_le_right.trans inf_le_right
+      have hΓwΓf : Γw ≤ Γf := inf_le_left
+      have hΓwΓ : Γw ≤ Γ := hΓwΓf.trans inf_le_left
+      -- Apply eps_iso_mono to get x ⊆ w
+      have hOrdY : Γw ≤ Ord y := hΓwΓ.trans Hy_ord
+      have hXSubY : Γw ≤ x ⊆ᴮ y :=
+        subset_of_mem_Ord (hΓwΓ.trans H_mem) (hΓwΓ.trans Hy_ord)
+      have hEpsIsoW : Γw ≤ eps_iso y x f := hΓwΓf.trans hEpsIso
+      have hXSubW : Γw ≤ x ⊆ᴮ w :=
+        eps_iso_mono hOrdY hXSubY hEpsIsoW (hΓwΓ.trans H_mem) w hPairXWMemF
+      -- From Ord x and w ∈ x, get w ⊆ x (transitivity)
+      have hTrans : Γw ≤ is_transitive x := (hΓwΓ.trans Hx_ord).trans inf_le_right
+      have hWSubX : Γw ≤ w ⊆ᴮ x :=
+        subset_of_mem_transitive hTrans hWmemX
+      -- x ⊆ w and w ⊆ x gives x = w
+      have hEqXW : Γw ≤ x =ᴮ w := by
+        rw [eq_iff_subset_subset]
+        exact le_inf hXSubW hWSubX
+      -- From w ∈ x and x = w, get x ∈ x
+      have hXMemX : Γw ≤ x ∈ᴮ x :=
+        subst_congr_mem_left' (bv_symm hEqXW) hWmemX
+      exact bot_of_mem_self hXMemX
+    -- Γf ≤ Γf ⊓ (⨆ ...) ≤ ⊥
+    calc
+      Γf ≤ Γf ⊓ (⨆ w : bSet 𝔹, w ∈ᴮ x ⊓ pair x w ∈ᴮ f) := le_inf le_rfl hSupPair
+      _ ≤ ⊥ := hInner
+  have hGoal : Γ ≤ Γ ⊓ (⨆ f, eps_iso y x f) := le_inf le_rfl H_eps_iso
+  exact le_trans hGoal hBot
 
 lemma eq_of_Ord_eps_iso {x y : bSet 𝔹} {Γ : 𝔹}
     (Hx_ord : Γ ≤ Ord x) (Hy_ord : Γ ≤ Ord y)
@@ -7212,10 +7439,171 @@ def CH : 𝔹 := (⨆ x, Ord x ⊓ ⨆ y,
 def CH₂ : 𝔹 := (⨆ x, Ord x ⊓ (larger_than bSet.omega x)ᶜ ⊓
     (larger_than x (bv_powerset bSet.omega))ᶜ)ᶜ
 
+lemma bv_subset_refl {x : bSet 𝔹} {Γ : 𝔹} : Γ ≤ x ⊆ᴮ x := by
+  rw [subset_unfold]
+  apply le_iInf; intro i
+  apply lattice.bv_imp_intro
+  -- Goal: Γ ⊓ x.bval i ≤ x.func i ∈ x
+  rw [mem_unfold]
+  apply le_iSup_of_le i
+  exact le_inf inf_le_right (by simp [bv_eq_refl])
+
+lemma injects_into_refl {x : bSet 𝔹} {Γ : 𝔹} : Γ ≤ injects_into x x :=
+  injects_into_of_subset bv_subset_refl
+
+lemma larger_than_empty {x : bSet 𝔹} {Γ : 𝔹} : Γ ≤ larger_than x (∅ : bSet 𝔹) := by
+  unfold larger_than
+  apply le_iSup_of_le (∅ : bSet 𝔹)
+  apply le_iSup_of_le (∅ : bSet 𝔹)
+  refine le_inf (le_inf empty_subset (is_func'_empty (x := (∅ : bSet 𝔹)))) is_surj_empty
+
+lemma larger_than_of_larger_than_and_injects {x y z : bSet 𝔹} {Γ : 𝔹}
+    (h_larger : Γ ≤ larger_than x z) (h_inj : Γ ≤ injects_into y z) :
+    Γ ≤ larger_than x y := by
+  unfold larger_than at h_larger ⊢
+  apply (le_inf le_rfl h_larger).trans
+  apply lattice.bv_cases_right
+  intro S
+  apply lattice.bv_cases_right
+  intro f
+  let Ω : 𝔹 := Γ ⊓ (S ⊆ᴮ x ⊓ is_func' S z f ⊓ is_surj S z f)
+  have hSSub : Ω ≤ S ⊆ᴮ x := by
+    dsimp [Ω]; exact inf_le_right.trans (inf_le_left.trans inf_le_left)
+  have hFuncF : Ω ≤ is_func' S z f := by
+    dsimp [Ω]; exact inf_le_right.trans (inf_le_left.trans inf_le_right)
+  have hSurjF : Ω ≤ is_surj S z f := by
+    dsimp [Ω]; exact inf_le_right.trans inf_le_right
+  have hΩΓ : Ω ≤ Γ := inf_le_left
+  have hΩInj : Ω ≤ injects_into y z := hΩΓ.trans h_inj
+  -- Decompose Ω = (Ω ⊓ exists_mem y) ⊔ (Ω ⊓ (exists_mem y)ᶜ)
+  have h_split : Ω = (Ω ⊓ exists_mem y) ⊔ (Ω ⊓ (exists_mem y)ᶜ) := by
+    calc
+      Ω = Ω ⊓ ⊤ := by simp
+      _ = Ω ⊓ (exists_mem y ⊔ (exists_mem y)ᶜ) := by simp
+      _ = (Ω ⊓ exists_mem y) ⊔ (Ω ⊓ (exists_mem y)ᶜ) := by rw [inf_sup_left]
+  show Ω ≤ ⨆ S, ⨆ f, S ⊆ᴮ x ⊓ is_func' S y f ⊓ is_surj S y f
+  rw [h_split]
+  apply sup_le
+  · -- Part 1: Ω ⊓ exists_mem y ≤ larger_than x y (y nonempty relative to this part)
+    let Λ : 𝔹 := Ω ⊓ exists_mem y
+    have hΛInj : Λ ≤ injects_into y z := inf_le_left.trans hΩInj
+    have hΛExists : Λ ≤ exists_mem y := inf_le_right
+    have hSurjects : Λ ≤ surjects_onto z y :=
+      surjects_onto_of_injects_into hΛInj hΛExists
+    unfold surjects_onto at hSurjects
+    apply (le_inf le_rfl hSurjects).trans
+    apply lattice.bv_cases_right
+    intro h'
+    let Δ : 𝔹 := Λ ⊓ is_surj_onto z y h'
+    have hSurjOntoH' : Δ ≤ is_surj_onto z y h' := inf_le_right
+    have hFuncH' : Δ ≤ is_func' z y h' := hSurjOntoH'.trans inf_le_left
+    have hSurjH' : Δ ≤ is_surj z y h' := hSurjOntoH'.trans inf_le_right
+    have hΔΩ : Δ ≤ Ω := by
+      dsimp [Δ, Λ]; exact inf_le_left.trans inf_le_left
+    have hΔFuncF : Δ ≤ is_func' S z f := hΔΩ.trans hFuncF
+    have hΔSurjF : Δ ≤ is_surj S z f := hΔΩ.trans hSurjF
+    have hΔSSub : Δ ≤ S ⊆ᴮ x := hΔΩ.trans hSSub
+    let comp : bSet 𝔹 := is_func'_comp hΔFuncF hFuncH'
+    have hCompSurj : Δ ≤ is_surj S y comp :=
+      is_func'_comp_surj hΔFuncF hFuncH' hΔSurjF hSurjH'
+    have hCompFunc : Δ ≤ is_func' S y comp :=
+      is_func'_comp_is_func' hΔFuncF hFuncH'
+    apply le_iSup_of_le S
+    apply le_iSup_of_le comp
+    exact le_inf (le_inf hΔSSub hCompFunc) hCompSurj
+  · -- Part 2: Ω ⊓ (exists_mem y)ᶜ ≤ larger_than x y (y empty relative to this part)
+    have his_surj : (exists_mem y)ᶜ ≤ is_surj (∅ : bSet 𝔹) y (∅ : bSet 𝔹) := by
+      unfold is_surj
+      apply le_iInf; intro v
+      apply lattice.bv_imp_intro
+      have h_mem_le : v ∈ᴮ y ≤ exists_mem y :=
+        le_iSup (fun z : bSet 𝔹 => z ∈ᴮ y) v
+      have h_contra : (exists_mem y)ᶜ ⊓ v ∈ᴮ y ≤ ⊥ :=
+        calc
+          (exists_mem y)ᶜ ⊓ v ∈ᴮ y ≤ (exists_mem y)ᶜ ⊓ exists_mem y :=
+            inf_le_inf_left _ h_mem_le
+          _ = ⊥ := by simp
+      calc
+        (exists_mem y)ᶜ ⊓ v ∈ᴮ y ≤ ⊥ := h_contra
+        _ ≤ ⨆ w : bSet 𝔹, w ∈ᴮ (∅ : bSet 𝔹) ⊓ pair w v ∈ᴮ (∅ : bSet 𝔹) := by
+          simpa [mem_empty] using bot_le
+    have h_empty_witness : (exists_mem y)ᶜ ≤ larger_than x y := by
+      unfold larger_than
+      have h_base : (exists_mem y)ᶜ ≤
+          (∅ : bSet 𝔹) ⊆ᴮ x ⊓ is_func' (∅ : bSet 𝔹) y (∅ : bSet 𝔹) ⊓ is_surj (∅ : bSet 𝔹) y (∅ : bSet 𝔹) :=
+        le_inf (le_inf (by simp [empty_subset_eq_top]) (is_func'_empty)) his_surj
+      exact le_trans h_base (le_iSup_of_le (∅ : bSet 𝔹) (le_iSup_of_le (∅ : bSet 𝔹) le_rfl))
+    exact le_trans inf_le_right h_empty_witness
+
+lemma not_larger_of_not_larger_and_injects {x y z : bSet 𝔹} {Γ : 𝔹}
+    (h_not_larger : Γ ≤ (larger_than x y)ᶜ) (h_inj : Γ ≤ injects_into y z) :
+    Γ ≤ (larger_than x z)ᶜ := by
+  rw [le_compl_iff_disjoint_right, disjoint_iff] at h_not_larger ⊢
+  have hLe : Γ ⊓ larger_than x z ≤ larger_than x y := by
+    calc
+      Γ ⊓ larger_than x z ≤ (injects_into y z) ⊓ larger_than x z :=
+        inf_le_inf_right (larger_than x z) h_inj
+      _ ≤ larger_than x y := larger_than_of_larger_than_and_injects inf_le_right inf_le_left
+  have h_nonpos : Γ ⊓ larger_than x z ≤ ⊥ := by
+    calc
+      Γ ⊓ larger_than x z = (Γ ⊓ larger_than x z) ⊓ Γ := by simp
+      _ ≤ larger_than x y ⊓ Γ := inf_le_inf hLe (le_refl Γ)
+      _ = Γ ⊓ larger_than x y := by rw [inf_comm]
+      _ ≤ ⊥ := by rw [h_not_larger]
+  apply le_antisymm h_nonpos bot_le
+
 lemma CH_iff_CH₂ {Γ : 𝔹} : Γ ≤ CH ↔ Γ ≤ CH₂ := by
   dsimp [CH, CH₂]
-  -- Equivalence of two CH formulations; port TBD
-  exact sorry
+  rw [le_compl_iff_disjoint_right, disjoint_iff, le_compl_iff_disjoint_right, disjoint_iff]
+  constructor
+  · intro h
+    let A := ⨆ (x : bSet 𝔹), Ord x ⊓ (larger_than bSet.omega x)ᶜ ⊓
+      (larger_than x (bv_powerset bSet.omega))ᶜ
+    let B := ⨆ (x : bSet 𝔹), Ord x ⊓ ⨆ (y : bSet 𝔹), (larger_than bSet.omega x)ᶜ ⊓ (larger_than x y)ᶜ ⊓
+      injects_into y (bv_powerset bSet.omega)
+    have hBA : A ≤ B := by
+      refine iSup_mono ?_
+      intro (x : bSet 𝔹)
+      calc
+        Ord x ⊓ (larger_than bSet.omega x)ᶜ ⊓ (larger_than x (bv_powerset bSet.omega))ᶜ
+            = Ord x ⊓ ((larger_than bSet.omega x)ᶜ ⊓ (larger_than x (bv_powerset bSet.omega))ᶜ) := by
+          rw [inf_assoc]
+        _ ≤ Ord x ⊓ (⨆ (y : bSet 𝔹), (larger_than bSet.omega x)ᶜ ⊓ (larger_than x y)ᶜ ⊓
+            injects_into y (bv_powerset bSet.omega)) :=
+          inf_le_inf_left (Ord x) (by
+            apply le_iSup_of_le (bv_powerset bSet.omega)
+            exact le_inf le_rfl injects_into_refl)
+    have h_nonpos : Γ ⊓ A ≤ ⊥ := by
+      calc
+        Γ ⊓ A ≤ Γ ⊓ B := inf_le_inf_left Γ hBA
+        _ = ⊥ := h
+    apply le_antisymm h_nonpos bot_le
+  · intro h
+    let A := ⨆ (x : bSet 𝔹), Ord x ⊓ (larger_than bSet.omega x)ᶜ ⊓
+      (larger_than x (bv_powerset bSet.omega))ᶜ
+    let B := ⨆ (x : bSet 𝔹), Ord x ⊓ ⨆ (y : bSet 𝔹), (larger_than bSet.omega x)ᶜ ⊓ (larger_than x y)ᶜ ⊓
+      injects_into y (bv_powerset bSet.omega)
+    have hAB : B ≤ A := by
+      refine iSup_mono ?_
+      intro (x : bSet 𝔹)
+      calc
+        Ord x ⊓ ⨆ (y : bSet 𝔹), (larger_than bSet.omega x)ᶜ ⊓ (larger_than x y)ᶜ ⊓
+            injects_into y (bv_powerset bSet.omega) ≤
+          Ord x ⊓ ((larger_than bSet.omega x)ᶜ ⊓ (larger_than x (bv_powerset bSet.omega))ᶜ) :=
+          inf_le_inf_left (Ord x) (by
+            apply iSup_le; intro (y : bSet 𝔹)
+            apply le_inf
+            · exact inf_le_left.trans inf_le_left
+            · apply not_larger_of_not_larger_and_injects
+              · exact inf_le_left.trans inf_le_right
+              · exact inf_le_right)
+        _ = Ord x ⊓ (larger_than bSet.omega x)ᶜ ⊓ (larger_than x (bv_powerset bSet.omega))ᶜ := by
+          rw [inf_assoc]
+    have h_nonpos : Γ ⊓ B ≤ ⊥ := by
+      calc
+        Γ ⊓ B ≤ Γ ⊓ A := inf_le_inf_left Γ hAB
+        _ = ⊥ := h
+    apply le_antisymm h_nonpos bot_le
 
 end bSet
 
