@@ -872,6 +872,13 @@ theorem neg_CH_f_unprovable : ¬ (ZFC ⊢' ∼CH_f) := by
   exact unprovable_of_model_neg (S := V β) (f := ∼CH_f)
     (bSet_models_ZFC (β := β)) (hNonzero := (bot_lt_top : (⊥ : β) < ⊤)) hNotNotCH
 
+theorem CH_f_unprovable : ¬ (ZFC ⊢' CH_f) := by
+  let β : Type := 𝔹_cohen.{0}
+  have hNotCH : forces (⊤ : β) (V β) (∼CH_f) :=
+    (neg_CH_f_sound (β := β) (Γ := ⊤)).2 not_CH₂
+  exact unprovable_of_model_neg (S := V β) (f := CH_f)
+    (bSet_models_ZFC (β := β)) (hNonzero := (bot_lt_top : (⊥ : β) < ⊤)) hNotCH
+
 end ZFC
 
 export ZFC (L_ZFC V emptyset omega powerset union pair mem subsetF isTransitiveF
@@ -880,6 +887,6 @@ export ZFC (L_ZFC V emptyset omega powerset union pair mem subsetF isTransitiveF
   CH_f_is_CH CH_f_sound neg_CH_f_sound bSet_models_emptyset bSet_models_ordered_pairs
   bSet_models_extensionality bSet_models_union bSet_models_powerset bSet_models_infinity
   bSet_models_regularity bSet_models_collection bSet_models_zorn bSet_models_ZFC
-  neg_CH_f_unprovable)
+  neg_CH_f_unprovable CH_f_unprovable)
 
 end Flypitch

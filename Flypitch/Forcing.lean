@@ -1177,6 +1177,111 @@ theorem ℵ₂_injects_𝔠 {Γ : 𝔹₀} :
   unfold injects_into
   exact le_iSup_of_le neg_CH_func ℵ₂_le_𝔠
 
+lemma larger_than_omega_aleph_one_compl {Γ : 𝔹₀} :
+    Γ ≤ (larger_than (omega : bSet 𝔹₀) (check pSet.aleph_one : bSet 𝔹₀))ᶜ := by
+  rw [le_compl_iff_disjoint_right, disjoint_iff]
+  apply le_antisymm ?_ bot_le
+  let Δ : 𝔹₀ := Γ ⊓ larger_than (omega : bSet 𝔹₀) (check pSet.aleph_one : bSet 𝔹₀)
+  by_contra h_not_bot
+  have h_nonzero : ⊥ < Δ := by
+    refine Ne.bot_lt ?_
+    intro h_eq
+    apply h_not_bot
+    exact le_of_eq h_eq
+  have h_larger : Δ ≤ larger_than (omega : bSet 𝔹₀) (check pSet.aleph_one : bSet 𝔹₀) := inf_le_right
+  have h_mem : ∃ z, z ∈ pSet.aleph_one := by
+    simpa [pSet.aleph_one] using pSet.exists_mem_of_regular pSet.is_regular_aleph_one
+  rcases AE_of_check_larger_than_check h_nonzero h_larger h_mem with ⟨f, hf⟩
+  classical
+    let g : pSet.aleph_one.Type → PSet.omega.Type := fun i =>
+      cast check_type (Classical.choose (hf (cast check_type.symm i)))
+    have hg : ∀ i : pSet.aleph_one.Type,
+        ⊥ < (is_func f) ⊓ (pair (check (PSet.omega.Func (g i) : pSet))
+          (check (pSet.aleph_one.Func i : pSet)) ∈ᴮ f) := by
+      intro i
+      let i' : (check pSet.aleph_one : bSet 𝔹₀).type := cast check_type.symm i
+      have h_spec := Classical.choose_spec (hf i')
+      simpa [g, i'] using h_spec
+    have hCard : Cardinal.mk PSet.omega.Type < Cardinal.mk pSet.aleph_one.Type := by
+      rw [pSet.mk_omega_eq]
+      simpa [pSet.aleph_one] using pSet.omega_lt_aleph_one
+    have hInfinite : cardinal.omega ≤ Cardinal.mk PSet.omega.Type := by
+      rw [pSet.mk_omega_eq]
+    rcases uncountable_fiber_of_card_lt hInfinite hCard g with ⟨ξ, hξ⟩
+    have hExt : ∀ (i j : pSet.aleph_one.Type), i ≠ j →
+        ¬ PSet.Equiv (pSet.aleph_one.Func i) (pSet.aleph_one.Func j) := by
+      intro i j hne hequiv
+      apply hne
+      clear hne
+      revert hequiv
+      revert i j
+      dsimp [pSet.aleph_one, pSet.card_ex, ordinal.mk]
+      rw [Ordinal.toPSet.eq_1 (Cardinal.ord (Cardinal.aleph 1))]
+      intro i j h
+      apply Ordinal.ToType.mk.symm.injective
+      apply Subtype.ext
+      exact ordinal.mk_inj h
+    have h_noCCC : ¬ BA_CCC 𝔹₀ :=
+      not_CCC_of_uncountable_fiber PSet.omega pSet.aleph_one hInfinite hExt f g hg ⟨ξ, hξ⟩
+    exact h_noCCC 𝔹_CCC
+
+lemma larger_than_aleph_one_aleph_two_compl {Γ : 𝔹₀} :
+    Γ ≤ (larger_than (check pSet.aleph_one : bSet 𝔹₀) (check pSet.aleph_two : bSet 𝔹₀))ᶜ := by
+  rw [le_compl_iff_disjoint_right, disjoint_iff]
+  apply le_antisymm ?_ bot_le
+  let Δ : 𝔹₀ := Γ ⊓ larger_than (check pSet.aleph_one : bSet 𝔹₀) (check pSet.aleph_two : bSet 𝔹₀)
+  by_contra h_not_bot
+  have h_nonzero : ⊥ < Δ := by
+    refine Ne.bot_lt ?_
+    intro h_eq
+    apply h_not_bot
+    exact le_of_eq h_eq
+  have h_larger : Δ ≤ larger_than (check pSet.aleph_one : bSet 𝔹₀) (check pSet.aleph_two : bSet 𝔹₀) := inf_le_right
+  have h_mem : ∃ z, z ∈ pSet.aleph_two := by
+    simpa [pSet.aleph_two] using pSet.exists_mem_of_regular pSet.is_regular_aleph_two
+  rcases AE_of_check_larger_than_check h_nonzero h_larger h_mem with ⟨f, hf⟩
+  classical
+    let g : pSet.aleph_two.Type → pSet.aleph_one.Type := fun i =>
+      cast check_type (Classical.choose (hf (cast check_type.symm i)))
+    have hg : ∀ i : pSet.aleph_two.Type,
+        ⊥ < (is_func f) ⊓ (pair (check (pSet.aleph_one.Func (g i) : pSet))
+          (check (pSet.aleph_two.Func i : pSet)) ∈ᴮ f) := by
+      intro i
+      let i' : (check pSet.aleph_two : bSet 𝔹₀).type := cast check_type.symm i
+      have h_spec := Classical.choose_spec (hf i')
+      simpa [g, i'] using h_spec
+    have hCard : Cardinal.mk pSet.aleph_one.Type < Cardinal.mk pSet.aleph_two.Type := by
+      simpa [pSet.aleph_one, pSet.aleph_two] using pSet.aleph_one_lt_aleph_two
+    have hInfinite : cardinal.omega ≤ Cardinal.mk pSet.aleph_one.Type := by
+      simpa [pSet.aleph_one] using pSet.omega_lt_aleph_one.le
+    rcases uncountable_fiber_of_card_lt hInfinite hCard g with ⟨ξ, hξ⟩
+    have hExt : ∀ (i j : pSet.aleph_two.Type), i ≠ j →
+        ¬ PSet.Equiv (pSet.aleph_two.Func i) (pSet.aleph_two.Func j) := by
+      intro i j hne hequiv
+      apply hne
+      clear hne
+      revert hequiv
+      revert i j
+      dsimp [pSet.aleph_two, pSet.card_ex, ordinal.mk]
+      rw [Ordinal.toPSet.eq_1 (Cardinal.ord (Cardinal.aleph 2))]
+      intro i j h
+      apply Ordinal.ToType.mk.symm.injective
+      apply Subtype.ext
+      exact ordinal.mk_inj h
+    have h_noCCC : ¬ BA_CCC 𝔹₀ :=
+      not_CCC_of_uncountable_fiber pSet.aleph_one pSet.aleph_two hInfinite hExt f g hg ⟨ξ, hξ⟩
+    exact h_noCCC 𝔹_CCC
+
+theorem not_CH₂ {Γ : 𝔹₀} : Γ ≤ CH₂ᶜ := by
+  dsimp [CH₂]
+  simp
+  apply le_iSup_of_le (check pSet.aleph_one : bSet 𝔹₀)
+  refine le_inf ?_ ?_
+  · refine le_inf ?_ ?_
+    · exact check_Ord pSet.aleph_one_Ord
+    · exact larger_than_omega_aleph_one_compl
+  · exact not_larger_of_not_larger_and_injects larger_than_aleph_one_aleph_two_compl ℵ₂_injects_𝔠
+
 end neg_CH
 
 end Flypitch
