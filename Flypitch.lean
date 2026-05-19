@@ -6,6 +6,7 @@ import Flypitch.Completion
 import Flypitch.BVTauto
 import Flypitch.BVM
 import Flypitch.BVMExtras
+import Flypitch.BFOL
 import Flypitch.Examples.Abel
 import Flypitch.FOL
 import Flypitch.FOL.Bounded
@@ -19,4 +20,7 @@ import Flypitch.LanguageExtension
 import Flypitch.PSetOrdinal
 import Flypitch.CantorSpace
 import Flypitch.Collapse
+import Flypitch.Forcing
+import Flypitch.ForcingCH
 import Flypitch.SetTheory
+import Flypitch.ZFC

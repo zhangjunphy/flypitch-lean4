@@ -67,6 +67,54 @@ end bounded_preterm
 
 variable {L : Language.{u}}
 
+/-- Lifting a bounded term preserves boundedness after increasing the free-variable bound. -/
+theorem bounded_term_at_lift_at : {l : Nat} → (t : preterm L l) → {n k m : Nat} →
+    bounded_term_at t n → bounded_term_at (lift_term_at t k m) (n + k)
+  | _, .var i, _, k, m, hi => by
+      by_cases hmi : m ≤ i
+      · simp [lift_term_at, hmi, Nat.add_lt_add_right hi k]
+      · simp [lift_term_at, hmi, lt_of_lt_of_le hi (Nat.le_add_right _ _)]
+  | _, .func _, _, _, _, _ => trivial
+  | _, .app t₁ t₂, _, _, _, h => by
+      exact ⟨bounded_term_at_lift_at t₁ h.1, bounded_term_at_lift_at t₂ h.2⟩
+
+/-- Lifting a bounded formula preserves boundedness after increasing the free-variable bound. -/
+theorem bounded_formula_at_lift_at : {l : Nat} → (f : preformula L l) → {n k m : Nat} →
+    bounded_formula_at f n → bounded_formula_at (lift_formula_at f k m) (n + k)
+  | _, .falsum, _, _, _, _ => trivial
+  | _, .equal t₁ t₂, _, _, _, h => by
+      exact ⟨bounded_term_at_lift_at t₁ h.1, bounded_term_at_lift_at t₂ h.2⟩
+  | _, .rel _, _, _, _, _ => trivial
+  | _, .apprel f t, _, _, _, h => by
+      exact ⟨bounded_formula_at_lift_at f h.1, bounded_term_at_lift_at t h.2⟩
+  | _, .imp f₁ f₂, _, _, _, h => by
+      exact ⟨bounded_formula_at_lift_at f₁ h.1, bounded_formula_at_lift_at f₂ h.2⟩
+  | _, .all f, n, k, m, h => by
+      simpa [lift_formula_at, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+        (bounded_formula_at_lift_at f (n := n + 1) (k := k) (m := m + 1) h)
+
+namespace bounded_preterm
+
+variable {L : Language.{u}} {n l : Nat}
+
+/-- Lift free variables in a bounded term, increasing the bound accordingly. -/
+def liftAt (t : bounded_preterm L n l) (k m : Nat) : bounded_preterm L (n + k) l :=
+  ⟨lift_term_at t.fst k m, bounded_term_at_lift_at t.fst t.2⟩
+
+/-- Lift all free variables in a bounded term by one. -/
+def lift1 (t : bounded_preterm L n l) : bounded_preterm L (n + 1) l :=
+  t.liftAt 1 0
+
+@[simp] theorem liftAt_fst (t : bounded_preterm L n l) (k m : Nat) :
+    (t.liftAt k m).fst = lift_term_at t.fst k m :=
+  rfl
+
+@[simp] theorem lift1_fst (t : bounded_preterm L n l) :
+    t.lift1.fst = lift_term_at t.fst 1 0 :=
+  rfl
+
+end bounded_preterm
+
 /-- The bounded variable corresponding to an element of `Fin n`. -/
 def bd_var {n : Nat} (k : Fin n) : bounded_term L n :=
   ⟨&k.1, k.2⟩
@@ -136,6 +184,28 @@ theorem cast1_fst (f : bounded_preformula L n l) :
 end bounded_preformula
 
 variable {L : Language.{u}}
+
+namespace bounded_preformula
+
+variable {L : Language.{u}} {n l : Nat}
+
+/-- Lift free variables in a bounded formula, increasing the bound accordingly. -/
+def liftAt (f : bounded_preformula L n l) (k m : Nat) : bounded_preformula L (n + k) l :=
+  ⟨lift_formula_at f.fst k m, bounded_formula_at_lift_at f.fst f.2⟩
+
+/-- Lift all free variables in a bounded formula by one. -/
+def lift1 (f : bounded_preformula L n l) : bounded_preformula L (n + 1) l :=
+  f.liftAt 1 0
+
+@[simp] theorem liftAt_fst (f : bounded_preformula L n l) (k m : Nat) :
+    (f.liftAt k m).fst = lift_formula_at f.fst k m :=
+  rfl
+
+@[simp] theorem lift1_fst (f : bounded_preformula L n l) :
+    f.lift1.fst = lift_formula_at f.fst 1 0 :=
+  rfl
+
+end bounded_preformula
 
 /-- The bounded version of falsum. -/
 def bd_falsum {n : Nat} : bounded_formula L n :=
@@ -410,6 +480,136 @@ theorem realize_bounded_formula_iff_of_fst {M : Structure L} {n : Nat}
 /-- Specialization to the unique free variable of a `1`-bounded formula. -/
 theorem substmax_eq_subst0_formula {l : Nat} (f : bounded_preformula L 1 l) (t : closed_term L) :
     (substmax_bounded_formula f t).fst = subst_formula f.fst t.fst 0 := by
+  rfl
+
+/-- Substituting an open term at de Bruijn index `m` lowers the ambient bound by one.
+
+The substituted term is bounded by the variables below the substitution depth; when it is inserted
+under `m` binders, `subst_term` lifts it by `m`, so the resulting term is bounded by `n + m`. -/
+theorem bounded_term_at_subst_open_at : {l : Nat} → (t : preterm L l) → {n m : Nat} →
+    {s : term L} → bounded_term_at t (n + m + 1) → bounded_term_at s n →
+      bounded_term_at (subst_term t s m) (n + m)
+  | _, .var k, n, m, s, hk, hs => by
+      by_cases hlt : k < m
+      · have hklt : k < n + m := lt_of_lt_of_le hlt (Nat.le_add_left m n)
+        simpa [subst_term, subst_realize, hlt] using hklt
+      · by_cases hgt : m < k
+        · have hkpos : 0 < k := lt_of_le_of_lt (Nat.zero_le m) hgt
+          have hsucc : k - 1 + 1 = k := Nat.succ_pred_eq_of_pos hkpos
+          have hklt : k - 1 < n + m := by
+            apply Nat.lt_of_succ_lt_succ
+            simpa [hsucc, Nat.add_assoc] using hk
+          simpa [subst_term, subst_realize, hlt, hgt] using hklt
+        · have hEq : k = m := Nat.le_antisymm (Nat.le_of_not_gt hgt) (Nat.le_of_not_gt hlt)
+          subst k
+          simpa [subst_term, subst_realize, hlt, hgt, Nat.add_comm, Nat.add_left_comm,
+            Nat.add_assoc] using
+              (bounded_term_at_lift_at (t := s) (n := n) (k := m) (m := 0) hs)
+  | _, .func _, _, _, _, _, _ => trivial
+  | _, .app t₁ t₂, _, _, s, ht, hs => by
+      exact ⟨bounded_term_at_subst_open_at t₁ ht.1 hs,
+        bounded_term_at_subst_open_at t₂ ht.2 hs⟩
+
+/-- Substituting an open term at de Bruijn index `m` in formulas lowers the ambient bound by one. -/
+theorem bounded_formula_at_subst_open_at : {l : Nat} → (f : preformula L l) → {n m : Nat} →
+    {s : term L} → bounded_formula_at f (n + m + 1) → bounded_term_at s n →
+      bounded_formula_at (subst_formula f s m) (n + m)
+  | _, .falsum, _, _, _, _, _ => trivial
+  | _, .equal t₁ t₂, _, _, s, hf, hs => by
+      exact ⟨bounded_term_at_subst_open_at t₁ hf.1 hs,
+        bounded_term_at_subst_open_at t₂ hf.2 hs⟩
+  | _, .rel _, _, _, _, _, _ => trivial
+  | _, .apprel f t, _, _, s, hf, hs => by
+      exact ⟨bounded_formula_at_subst_open_at f hf.1 hs,
+        bounded_term_at_subst_open_at t hf.2 hs⟩
+  | _, .imp f₁ f₂, _, _, s, hf, hs => by
+      exact ⟨bounded_formula_at_subst_open_at f₁ hf.1 hs,
+        bounded_formula_at_subst_open_at f₂ hf.2 hs⟩
+  | _, .all f, n, m, s, hf, hs => by
+      simpa [subst_formula, Nat.add_assoc] using
+        (bounded_formula_at_subst_open_at (f := f) (n := n) (m := m + 1)
+          (s := s) hf hs)
+
+/-- Substitution of an open bounded term at a de Bruijn index. -/
+@[simp] def subst_bounded_formula_open_at {n m l : Nat}
+    (f : bounded_preformula L (n + m + 1) l) (s : bounded_term L n) :
+    bounded_preformula L (n + m) l :=
+  ⟨subst_formula f.fst s.fst m,
+    bounded_formula_at_subst_open_at (f := f.fst) (n := n) (m := m) f.2 s.2⟩
+
+@[simp] theorem subst_bounded_formula_open_at_fst {n m l : Nat}
+    (f : bounded_preformula L (n + m + 1) l) (s : bounded_term L n) :
+    (subst_bounded_formula_open_at (m := m) f s).fst = subst_formula f.fst s.fst m :=
+  rfl
+
+/-- Substitution of an open bounded term at the newest free variable. -/
+@[simp] def subst_bounded_formula_open {n l : Nat}
+    (f : bounded_preformula L (n + 1) l) (s : bounded_term L n) :
+    bounded_preformula L n l :=
+  subst_bounded_formula_open_at (m := 0) f s
+
+@[simp] theorem subst_bounded_formula_open_fst {n l : Nat}
+    (f : bounded_preformula L (n + 1) l) (s : bounded_term L n) :
+    (subst_bounded_formula_open f s).fst = subst_formula f.fst s.fst 0 :=
+  rfl
+
+/-- Substituting a closed term at any free-variable index lowers the free-variable bound. -/
+theorem bounded_term_at_subst_closed_at : {l : Nat} → (t : preterm L l) → {n m : Nat} →
+    m < n + 1 → {s : term L} → bounded_term_at t (n + 1) → bounded_term_at s 0 →
+      bounded_term_at (subst_term t s m) n
+  | _, .var k, n, m, hm, s, hk, hs => by
+      by_cases hlt : k < m
+      · have hklt : k < n := by omega
+        simpa [subst_term, subst_realize, hlt] using hklt
+      · by_cases hgt : m < k
+        · have hkpos : 0 < k := lt_of_le_of_lt (Nat.zero_le m) hgt
+          have hsucc : k - 1 + 1 = k := Nat.succ_pred_eq_of_pos hkpos
+          have hklt : k - 1 < n := by
+            apply Nat.lt_of_succ_lt_succ
+            simpa [hsucc] using hk
+          simpa [subst_term, subst_realize, hlt, hgt] using hklt
+        · have hEq : k = m := Nat.le_antisymm (Nat.le_of_not_gt hgt) (Nat.le_of_not_gt hlt)
+          subst k
+          have hs' : bounded_term_at (lift_term_at s m 0) n := by
+            have hlift : lift_term_at s m 0 = s := by
+              simpa [lift_term] using bounded_term_at_lift_irrel (t := s) m 0 hs
+            rw [hlift]
+            exact bounded_term_at_mono (t := s) hs (Nat.zero_le n)
+          simpa [subst_term, subst_realize, hlt, hgt] using hs'
+  | _, .func _, _, _, _, _, _, _ => trivial
+  | _, .app t₁ t₂, _, _, hm, s, ht, hs => by
+      exact ⟨bounded_term_at_subst_closed_at t₁ hm ht.1 hs,
+        bounded_term_at_subst_closed_at t₂ hm ht.2 hs⟩
+
+/-- Substituting a closed term at any free-variable index in formulas lowers the bound. -/
+theorem bounded_formula_at_subst_closed_at : {l : Nat} → (f : preformula L l) → {n m : Nat} →
+    m < n + 1 → {s : term L} → bounded_formula_at f (n + 1) → bounded_term_at s 0 →
+      bounded_formula_at (subst_formula f s m) n
+  | _, .falsum, _, _, _, _, _, _ => trivial
+  | _, .equal t₁ t₂, _, _, hm, s, hf, hs => by
+      exact ⟨bounded_term_at_subst_closed_at t₁ hm hf.1 hs,
+        bounded_term_at_subst_closed_at t₂ hm hf.2 hs⟩
+  | _, .rel _, _, _, _, _, _, _ => trivial
+  | _, .apprel f t, _, _, hm, s, hf, hs => by
+      exact ⟨bounded_formula_at_subst_closed_at f hm hf.1 hs,
+        bounded_term_at_subst_closed_at t hm hf.2 hs⟩
+  | _, .imp f₁ f₂, _, _, hm, s, hf, hs => by
+      exact ⟨bounded_formula_at_subst_closed_at f₁ hm hf.1 hs,
+        bounded_formula_at_subst_closed_at f₂ hm hf.2 hs⟩
+  | _, .all f, n, m, hm, s, hf, hs => by
+      simpa [subst_formula] using
+        (bounded_formula_at_subst_closed_at (f := f) (n := n + 1) (m := m + 1)
+          (by omega) (s := s) hf hs)
+
+/-- Substitution of a closed term at an arbitrary free-variable index. -/
+@[simp] def subst_bounded_formula_at {n l : Nat} (f : bounded_preformula L (n + 1) l)
+    (s : closed_term L) (m : Nat) (hm : m < n + 1) : bounded_preformula L n l :=
+  ⟨subst_formula f.fst s.fst m,
+    bounded_formula_at_subst_closed_at (f := f.fst) (n := n) (m := m) hm f.2 s.2⟩
+
+@[simp] theorem subst_bounded_formula_at_fst {n l : Nat}
+    (f : bounded_preformula L (n + 1) l) (s : closed_term L) (m : Nat) (hm : m < n + 1) :
+    (subst_bounded_formula_at f s m hm).fst = subst_formula f.fst s.fst m :=
   rfl
 
 end fol

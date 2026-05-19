@@ -79,8 +79,22 @@ the verified-surface summary below.
   `exists_two`/not-one bridges, plus the opening function/injection/surjection and
   epsilon-isomorphism predicate layer, and the checked-function preservation bridge.
 - [x] Continue the `bvm_extras`/`bvm_extras2` Boolean-valued model compatibility layer (BVMExtras.lean now complete with zero sorries, including `CH_iff_CH₂`).
-- [ ] Continue the downstream `aleph_one.lean` `bSet` well-ordering and `a1` construction.
-- [ ] Port `forcing.lean` and `forcing_CH.lean`.
+- [x] Continue the downstream `aleph_one.lean` `bSet` well-ordering and `a1` construction
+  (the Boolean-valued relation/product-map definition layer has started in `Flypitch/AlephOne.lean`,
+  including `is_rel`, `is_wo`, `mem_rel`, `mem_mem_rel_iff`, `prod.map`,
+  `prod.map_self`, `induced_epsilon_rel`, the first `a1` predicate/candidate definitions,
+  `a1.B_ext_ϕ`, `a1.mem_candidates_iff`, congruence support for `mem_rel`, bounded `image`,
+  and `prod.map_self`, plus `a1.B_ext_ψ`, candidate witness extraction, the auxiliary choice
+  function, the public `a1` name with ordinal membership projection, the public membership normal
+  form for `a1`, the zero/empty equality bridge, the induced-epsilon equality-to-ordinal-equality
+  bridge, `a1_Ord`, `a1_spec`, `a1_le_of_omega_lt`, and the checked `aleph_one` subset bridge).
+- [x] Port the current `forcing.lean` Cohen/`¬CH` side through the cardinal-preservation bridge
+  used by `AE_of_check_larger_than_check`; `Flypitch/Forcing.lean` now compiles with zero
+  placeholders and is imported by `Flypitch.lean`.
+- [x] Port `forcing_CH.lean` through the collapse/`CH` endpoint: collapse relation
+  extensionality/functionality/totality/surjectivity, dense-basis reflection for checked
+  `omega -> 2` functions, `check_functions_eq_functions`, `continuum_le_continuum_check`,
+  `CH₂_true`, and `CH_true`.
 - [ ] Reconnect the logic and forcing branches through `bfol`, `zfc`, `print_formula`, and `summary`.
 - [ ] Re-establish `independence_of_CH`.
 
@@ -155,22 +169,98 @@ files themselves.
   `eq_of_Ord_eps_iso_aux`, `larger_than_of_larger_than_and_injects`,
   `not_larger_of_not_larger_and_injects`, `larger_than_empty`, `injects_into_refl`,
   `bv_subset_refl`, and the equivalence `CH_iff_CH₂` of the two Continuum Hypothesis
-  formulations. BVMExtras.lean is now complete with zero `sorry` blocks.
-- Integration branch: `bfol`, `zfc`, `print_formula`, `summary`, and `independence_of_CH` remain unported/unreconnected.
+  formulations. The core/mixing layer needed for Zorn now also includes the upstream-style
+  `subset'_inductive`, `core_aux_lemma2`, top-valued `bSet_zorns_lemma`, and contextual
+  `bSet_zorns_lemma'`. BVMExtras.lean is now complete with zero `sorry` blocks.
+- Integration branch: `Flypitch/BFOL.lean` is now connected to `Flypitch.lean` with the
+  Boolean-valued structure, term/formula evaluators, sentence forcing, and theory forcing
+  interface needed by the ZFC bridge. It now also has evaluator simp lemmas for the derived
+  bounded connectives `bd_falsum`, `bd_not`, `bd_and`, `bd_or`, `bd_biimp`, and `bd_ex`,
+  plus the bounded open-substitution realization theorem
+  `boolean_realize_bounded_formula_subst_open`, formula-level Boolean soundness, sentence-level
+  forcing soundness, and the `unprovable_of_model_neg` bridge from Boolean-valued countermodels
+  to syntactic unprovability.
+  `Flypitch/ZFC.lean` is also connected with the `L_ZFC`
+  language, the Boolean-valued universe `V`, the set-forming function/relation interpretations,
+  and the first evaluator simp lemmas for membership, equality, emptyset, omega, pair, powerset,
+  and union. The finite ZFC axiom sentence surface is now ported through emptyset, ordered pairs,
+  extensionality, union, powerset, infinity, regularity, and Zorn, and the current finite
+  `ZFC.ZFC` theory plus `CH_f` syntax compile. The CH semantic endpoints
+  `CH_f_is_CH`, `CH_f_sound`, and `neg_CH_f_sound` are now available. Boolean-valued model lemmas
+  are now connected for emptyset, ordered pairs, extensionality, union, powerset, infinity,
+  regularity, and
+  the collection schema. The collection bridge uses the lower Boolean-valued witness construction
+  in `BVMExtras` (`collection_witness`, `collection_image`, and `bSet_axiom_of_collection`), the
+  `bdAllsFrom` realization helper in `ZFC`, bounded lift-at realization lemmas for the
+  `φ.liftAt k 2` occurrences, and a coercion-shaped substitution simplifier for the final
+  collection witness formula. The contextual Zorn bridge is now connected through
+  `bSet_models_zorn`, and the full Boolean-valued model theorem `bSet_models_ZFC` compiles. The
+  collapse-side unprovability theorem `neg_CH_f_unprovable` is now connected via
+  `ForcingCH.CH₂_true` and the Boolean-valued double-negation helper
+  `forced_not_not_of_forced`. The Cohen `¬CH₂` endpoint, `CH_f_unprovable`, `print_formula`,
+  `summary`, and `independence_of_CH` remain open.
+- Forcing branch: `Flypitch/Forcing.lean` is connected to `Flypitch.lean` and compiles without
+  placeholders through the Cohen forcing cardinal-preservation argument, including the extension
+  from a subset-surjection witness in `larger_than x y` plus nonemptiness of `y` to an internal
+  surjection from `x` onto `y`.
+- Aleph-one branch: `Flypitch/AlephOne.lean` now imports the Boolean-valued model extras and has
+  begun the downstream `bSet` well-ordering layer with relation/product-map definitions and the
+  membership characterization and congruence theorem for `mem_rel`; bounded image congruence is
+  available on both the source and graph arguments. The product-map layer now includes a general
+  product witness extractor, the `prod.map_self` membership characterization, congruence in the
+  first argument, the induced-epsilon membership characterization, injective reflection back to
+  source membership, image-projection lemmas, the first induced-epsilon pair decomposition
+  lemma, and the induced-relation nonemptiness chain through
+  `nonempty_induced_rel_iff_not_zero_and_not_one`. The induced-epsilon comparison bridge now
+  includes codomain extensionality/transport support for Boolean-valued functions, injective
+  functions, and surjections, plus the image equality lemmas
+  `image_eq_of_eq_induced_epsilon_rel_aux` and
+  `image_eq_of_eq_induced_epsilon_rel`. The composition map used by the next ordinal-equality
+  bridge is now packaged as `induced_epsilon_comp`, with verified `is_function` and `is_surj`
+  structure lemmas. The first `a1`
+  predicate
+  layer (`a1.ϕ`, `a1.B_ext_ϕ`, `a1.candidates`,
+  `a1.mem_candidates_iff`, `a1.ψ`, `a1.B_ext_ψ`, `a1.candidates_AE`, `a1.func`,
+  `a1.func_spec`, `a1.aux`, `a1.Ord_of_mem_aux`, public `a1`, and `Ord_of_mem_a1`) also compiles.
+  The public `mem_a1_iff₀` normal form and `eq_zero_iff_eq_empty` bridge are also available. The
+  induced-epsilon composition bridge is now complete through `induced_epsilon_comp_strong_eps_hom`,
+  `induced_epsilon_comp_eps_iso`, and `eq_of_eq_induced_epsilon_rel`. The Boolean-valued aleph-one
+  API now includes `mem_a1_of_injects_into_omega_aux`, `mem_a1_iff`, `a1_transitive`, `a1_ewo`,
+  `a1_Ord`, `a1_spec`, `a1_le_of_omega_lt`, and `aleph_one_check_sub_aleph_one_aux`.
+- `forcing_CH` branch: `Flypitch/ForcingCH.lean` is now connected to `Flypitch.lean` and has the
+  upstream opening layer: the `bSet.aleph_one` wrapper, the checked `aleph_one` equality/leastness
+  bridges under `omega < aleph_one`, the generic checked bounded-forall helper, relation
+  construction from Boolean arrays, left/right projection lemmas, functionality/totality/surjectivity
+  for suitably tall/wide/extensional arrays, and the public collapse Boolean-algebra alias. The
+  collapse-specific layer has also started with the cardinal helper proving every collapse condition
+  leaves an `aleph_one` coordinate outside its domain, the singleton regular-open array `π_af`, the
+  relation `π`, dense-open proofs `π_af_wide` and `π_af_tall`, and the packaged `π_is_total` /
+  `π_is_surj` facts. It now also includes ordinal-index injectivity for the checked `aleph_one`,
+  the `π_af` disjointness/extensionality bridge, the packaged `π_is_func'` fact, the generic
+  `larger_than_of_larger_than_and_domain_injects` domain-lift lemma, the packaged
+  `aleph_one_larger_than_powerset_omega_check`, its lift to Boolean-valued `aleph_one`,
+  `aleph_one_injects_into_of_omega_not_larger`, the derived checked-continuum comparison
+  `powerset_omega_larger_than_of_omega_not_larger`, the context-level transfer
+  `bv_powerset_omega_larger_than_of_omega_not_larger`, the conditional continuum-injection
+  reduction `continuum_le_continuum_check_of_check_functions_eq`, the conditional CH₂ endpoints
+  `CH₂_true_of_continuum_le_continuum_check` and `CH₂_true_of_check_functions_eq`, and the first
+  dense-principal-open witness helper `AE_of_check_func_check'` for checked functions. The
+  omega-closed reflection bridge for checked `omega -> 2` functions is now closed via
+  `function_reflect_of_omega_closed_two`, `functions_subset_check_functions`,
+  `check_functions_eq_functions`, `continuum_le_continuum_check`, `CH₂_true`, and `CH_true`, so
+  this milestone is complete with zero placeholders.
 
 ## Current Frontier
 
 `lake build` succeeds for the current port surface. The remaining work is concentrated on the
-forcing side, not the completed logic/completeness branch.
+integration side, not the completed logic/completeness or forcing branches.
 
 Next useful tranches:
 
-1. Continue the downstream `aleph_one.lean` `bSet` well-ordering and `a1` construction now that
-   the full BVMExtras API (through `CH_iff_CH₂`) is available.
-3. Port `forcing.lean` and `forcing_CH.lean` after the Boolean-valued model layer exposes the
-   needed internal set-theoretic predicates and CH-specific constructions.
-4. Reconnect the logic and forcing branches through `bfol`, `zfc`, `print_formula`, and finally
-   `summary`.
+1. Finish the Cohen forcing `¬CH₂` endpoint from the cardinal-preservation bridge currently in
+   `Flypitch/Forcing.lean`.
+2. Use `bSet_models_ZFC` and the Cohen `¬CH₂` endpoint to prove `CH_f_unprovable`.
+3. Add `print_formula` only if needed, then port `summary` and recover `independence_of_CH`.
 
 ## Remaining Target
 

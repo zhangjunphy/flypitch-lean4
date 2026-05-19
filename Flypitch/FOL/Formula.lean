@@ -226,7 +226,27 @@ theorem lift_formula_at2_small : ∀ {l : Nat} (f : preformula L l) (n n' : Nat)
       simp [lift_formula_at, lift_formula_at2_small, h]
   | _, .all f, n, n', m, m', h => by
       simpa [lift_formula_at, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
-        lift_formula_at2_small (f := f) n n' (m := m + 1) (m' := m' + 1) (Nat.add_le_add_right h 1)
+        lift_formula_at2_small (f := f) n n'
+          (m := m + 1) (m' := m' + 1) (Nat.add_le_add_right h 1)
+
+/-- Collapse two lifts when the second cutoff lies inside the first lifted block. -/
+theorem lift_formula_at2_medium : ∀ {l : Nat} (f : preformula L l) {n : Nat} (n' : Nat)
+    {m m' : Nat}, m ≤ m' → m' ≤ m + n →
+    lift_formula_at (lift_formula_at f n m) n' m' =
+      lift_formula_at f (n + n') m
+  | _, .falsum, _, _, _, _, _, _ => rfl
+  | _, .equal t₁ t₂, n, n', m, m', h₁, h₂ => by
+      simp [lift_formula_at, lift_term_at2_medium, h₁, h₂]
+  | _, .rel R, _, _, _, _, _, _ => rfl
+  | _, .apprel f t, n, n', m, m', h₁, h₂ => by
+      simp [lift_formula_at, lift_formula_at2_medium, lift_term_at2_medium, h₁, h₂]
+  | _, .imp f₁ f₂, n, n', m, m', h₁, h₂ => by
+      simp [lift_formula_at, lift_formula_at2_medium, h₁, h₂]
+  | _, .all f, n, n', m, m', h₁, h₂ => by
+      simpa [lift_formula_at, Nat.add_assoc] using
+        lift_formula_at2_medium (f := f) (n := n) n'
+          (m := m + 1) (m' := m' + 1)
+          (Nat.add_le_add_right h₁ 1) (by omega)
 
 /-- A single lift can be moved past another lift by adjusting the cutoff. -/
 @[simp] theorem lift_formula1_lift_formula_at {l : Nat} (f : preformula L l) (n m : Nat) :

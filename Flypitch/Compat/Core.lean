@@ -38,10 +38,22 @@ local infixr:67 " :: " => dvector.cons
 theorem zero_eq : (xs : dvector α 0) → xs = []
   | [] => rfl
 
+/-- Keep the leftmost `n` entries of a dependent vector. -/
+@[simp] def take : (n : Nat) → {m : Nat} → dvector α m → n ≤ m → dvector α n
+  | 0, _, _, _ => []
+  | n + 1, 0, [], h => False.elim (Nat.not_succ_le_zero n h)
+  | n + 1, _ + 1, x :: xs, h => x :: take n xs (Nat.le_of_succ_le_succ h)
+
 /-- Append an element to the right end of a dependent vector. -/
 @[simp] def concat : {n : Nat} → dvector α n → α → dvector α (n + 1)
   | _, [], x => x :: []
   | _, y :: ys, x => y :: concat ys x
+
+/-- Insert an element at a bounded natural-number position. -/
+@[simp] def insertAt : (m : Nat) → {n : Nat} → dvector α n → α → m ≤ n → dvector α (n + 1)
+  | 0, _, xs, x, _ => x :: xs
+  | m + 1, 0, [], _, h => False.elim (Nat.not_succ_le_zero m h)
+  | m + 1, _ + 1, y :: ys, x, h => y :: insertAt m ys x (Nat.le_of_succ_le_succ h)
 
 /-- Return the entry at a natural-number index with a proof that the index is in range. -/
 @[simp] def nth : {n : Nat} → (xs : dvector α n) → (m : Nat) → m < n → α
@@ -52,6 +64,23 @@ theorem zero_eq : (xs : dvector α 0) → xs = []
 @[simp] theorem nth_cons (x : α) (xs : dvector α n) (m : Nat) (h : m < n) :
     nth (x :: xs) (m + 1) (Nat.succ_lt_succ h) = nth xs m h := by
   simp [nth]
+
+theorem nth_irrel : {n : Nat} → (xs : dvector α n) → (m : Nat) →
+    (h₁ h₂ : m < n) → xs.nth m h₁ = xs.nth m h₂
+  | 0, [], m, h₁, _ => False.elim (Nat.not_lt_zero m h₁)
+  | _ + 1, _ :: _, 0, _, _ => rfl
+  | _ + 1, _ :: xs, m + 1, h₁, h₂ =>
+      nth_irrel xs m (Nat.lt_of_succ_lt_succ h₁) (Nat.lt_of_succ_lt_succ h₂)
+
+@[simp] theorem nth_take : {n m : Nat} → (xs : dvector α m) → (h : n ≤ m) →
+    (k : Nat) → (hk : k < n) →
+      (take n xs h).nth k hk = xs.nth k (lt_of_lt_of_le hk h)
+  | 0, _, _, _, k, hk => False.elim (Nat.not_lt_zero k hk)
+  | n + 1, 0, [], h, _, _ => False.elim (Nat.not_succ_le_zero n h)
+  | n + 1, m + 1, x :: xs, h, 0, _ => rfl
+  | n + 1, m + 1, x :: xs, h, k + 1, hk => by
+      simpa [take, nth] using
+        nth_take xs (Nat.le_of_succ_le_succ h) k (Nat.lt_of_succ_lt_succ hk)
 
 /-- Return the last entry of a nonempty dependent vector. -/
 @[reducible, simp] def last (xs : dvector α (n + 1)) : α :=
@@ -90,6 +119,16 @@ theorem mem_of_pmem {x : α} : {n : Nat} → {xs : dvector α n} → xs.pmem x �
 @[simp] def map (f : α → β) : {n : Nat} → dvector α n → dvector β n
   | _, [] => []
   | _, x :: xs => f x :: map f xs
+
+/-- Zip two dependent vectors with a binary function. -/
+@[simp] def map2 (f : α → β → γ) : {n : Nat} → dvector α n → dvector β n → dvector γ n
+  | _, [], [] => []
+  | _, x :: xs, y :: ys => f x y :: map2 f xs ys
+
+/-- Finite infimum over a dependent vector. -/
+@[simp] def fInf [Top α] [SemilatticeInf α] : {n : Nat} → dvector α n → α
+  | _, [] => ⊤
+  | _, x :: xs => x ⊓ fInf xs
 
 theorem map_congr_pmem {f g : α → β} :
     {n : Nat} → {xs : dvector α n} →

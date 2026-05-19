@@ -754,9 +754,200 @@ lemma surjects_onto_of_larger_than_and_exists_mem {x y : bSet 𝔹} {Γ : 𝔹}
           have hC'_v₂_to_z : C' ≤ v₂ =ᴮ z := bv_trans hC'_v₂_eq hC'_v₂z
           exact bv_trans hC'_v₁_to_z (bv_symm hC'_v₂_to_z)
     · -- 1b: Θ ≤ is_total x y g
-      sorry
+      unfold is_total
+      apply le_iInf; intro a
+      apply lattice.bv_imp_intro
+      let Φ : 𝔹 := Θ ⊓ a ∈ᴮ x
+      have h_split : Φ = (Φ ⊓ (a ∈ᴮ S)) ⊔ (Φ ⊓ ((a ∈ᴮ S)ᶜ)) := by
+        calc
+          Φ = Φ ⊓ ⊤ := by simp
+          _ = Φ ⊓ (a ∈ᴮ S ⊔ (a ∈ᴮ S)ᶜ) := by simp
+          _ = (Φ ⊓ (a ∈ᴮ S)) ⊔ (Φ ⊓ ((a ∈ᴮ S)ᶜ)) := by rw [inf_sup_left]
+      rw [show Θ ⊓ a ∈ᴮ x = Φ by dsimp [Φ], h_split]
+      apply sup_le
+      · -- a ∈ S: use the original total function from S to y.
+        let Φ₁ : 𝔹 := Φ ⊓ (a ∈ᴮ S)
+        have h_total_f : Θ ≤ is_total S y f := is_total_of_is_func' h_func'_Θ
+        have h_cases : Φ₁ ≤ ⨆ b : bSet 𝔹, b ∈ᴮ y ⊓ pair a b ∈ᴮ f := by
+          unfold is_total at h_total_f
+          have h_imp : Θ ≤ lattice.imp (a ∈ᴮ S)
+              (⨆ b : bSet 𝔹, b ∈ᴮ y ⊓ pair a b ∈ᴮ f) :=
+            h_total_f.trans (iInf_le _ a)
+          have hΦ₁_Θ : Φ₁ ≤ Θ := by dsimp [Φ₁, Φ]; exact inf_le_left.trans inf_le_left
+          have hΦ₁_S : Φ₁ ≤ a ∈ᴮ S := by dsimp [Φ₁]; exact inf_le_right
+          exact lattice.bv_context_apply (hΦ₁_Θ.trans h_imp) hΦ₁_S
+        apply (le_inf le_rfl h_cases).trans
+        apply lattice.bv_cases_right
+        intro b
+        let Φ₂ : 𝔹 := Φ₁ ⊓ (b ∈ᴮ y ⊓ pair a b ∈ᴮ f)
+        apply lattice.bv_use b
+        apply le_inf
+        · dsimp [Φ₂]; exact inf_le_right.trans inf_le_left
+        · dsimp [g]; rw [mem_subset.mk_iff₂]
+          have ha_mem_x : Φ₂ ≤ a ∈ᴮ x := by
+            dsimp [Φ₂, Φ₁, Φ]; exact (inf_le_left.trans inf_le_left).trans inf_le_right
+          have hb_mem_y : Φ₂ ≤ b ∈ᴮ y := by dsimp [Φ₂]; exact inf_le_right.trans inf_le_left
+          have h_pair_f : Φ₂ ≤ pair a b ∈ᴮ f := by dsimp [Φ₂]; exact inf_le_right.trans inf_le_right
+          rw [mem_unfold] at ha_mem_x
+          apply (le_inf le_rfl ha_mem_x).trans
+          apply lattice.bv_cases_right
+          intro i
+          let Φ₃ : 𝔹 := Φ₂ ⊓ (x.bval i ⊓ a =ᴮ x.func i)
+          rw [mem_unfold] at hb_mem_y
+          apply (le_inf le_rfl (inf_le_left.trans hb_mem_y)).trans
+          apply lattice.bv_cases_right
+          intro j
+          let Φ₄ : 𝔹 := Φ₃ ⊓ (y.bval j ⊓ b =ᴮ y.func j)
+          apply lattice.bv_use (i, j)
+          apply le_inf
+          · dsimp [Φ₄, Φ₃, bSet.prod]
+            exact le_inf
+              ((inf_le_left.trans inf_le_right).trans inf_le_left)
+              (inf_le_right.trans inf_le_left)
+          · apply le_inf
+            · have ha_eq : Φ₄ ≤ a =ᴮ x.func i := by
+                dsimp [Φ₄, Φ₃]; exact (inf_le_left.trans inf_le_right).trans inf_le_right
+              have hb_eq : Φ₄ ≤ b =ᴮ y.func j := by
+                dsimp [Φ₄]; exact inf_le_right.trans inf_le_right
+              exact pair_congr ha_eq hb_eq
+            · have ha_eq : Φ₄ ≤ a =ᴮ x.func i := by
+                dsimp [Φ₄, Φ₃]; exact (inf_le_left.trans inf_le_right).trans inf_le_right
+              have hb_eq : Φ₄ ≤ b =ᴮ y.func j := by
+                dsimp [Φ₄]; exact inf_le_right.trans inf_le_right
+              have h_pair_f' : Φ₄ ≤ pair a b ∈ᴮ f :=
+                (inf_le_left.trans inf_le_left).trans h_pair_f
+              have h_pair_eq : Φ₄ ≤ pair a b =ᴮ pair (x.func i) (y.func j) :=
+                pair_congr ha_eq hb_eq
+              have h_inS_a : Φ₄ ≤ a ∈ᴮ S := by
+                dsimp [Φ₄, Φ₃, Φ₂, Φ₁]
+                exact ((inf_le_left.trans inf_le_left).trans inf_le_left).trans inf_le_right
+              have h_inS_i : Φ₄ ≤ x.func i ∈ᴮ S :=
+                subst_congr_mem_left' ha_eq h_inS_a
+              have h_f_i_j : Φ₄ ≤ pair (x.func i) (y.func j) ∈ᴮ f :=
+                subst_congr_mem_left' h_pair_eq h_pair_f'
+              exact le_trans (le_inf h_inS_i h_f_i_j)
+                (le_sup_left
+                  (a := (x.func i ∈ᴮ S) ⊓ (pair (x.func i) (y.func j) ∈ᴮ f))
+                  (b := ((x.func i ∈ᴮ S)ᶜ) ⊓ (y.func j =ᴮ z)))
+      · -- a ∉ S: use the fixed witness z.
+        let Φ₁ : 𝔹 := Φ ⊓ ((a ∈ᴮ S)ᶜ)
+        apply lattice.bv_use z
+        apply le_inf
+        · dsimp [Φ₁, Φ]; exact (inf_le_left.trans inf_le_left).trans hz_mem
+        · dsimp [g]; rw [mem_subset.mk_iff₂]
+          have ha_mem_x : Φ₁ ≤ a ∈ᴮ x := by dsimp [Φ₁, Φ]; exact inf_le_left.trans inf_le_right
+          rw [mem_unfold] at ha_mem_x
+          apply (le_inf le_rfl ha_mem_x).trans
+          apply lattice.bv_cases_right
+          intro i
+          let Φ₂ : 𝔹 := Φ₁ ⊓ (x.bval i ⊓ a =ᴮ x.func i)
+          have hz_mem_y : Φ₂ ≤ z ∈ᴮ y := by
+            dsimp [Φ₂, Φ₁, Φ]; exact ((inf_le_left.trans inf_le_left).trans inf_le_left).trans hz_mem
+          rw [mem_unfold] at hz_mem_y
+          apply (le_inf le_rfl hz_mem_y).trans
+          apply lattice.bv_cases_right
+          intro j
+          let Φ₃ : 𝔹 := Φ₂ ⊓ (y.bval j ⊓ z =ᴮ y.func j)
+          apply lattice.bv_use (i, j)
+          apply le_inf
+          · dsimp [Φ₃, Φ₂, bSet.prod]
+            exact le_inf
+              ((inf_le_left.trans inf_le_right).trans inf_le_left)
+              (inf_le_right.trans inf_le_left)
+          · apply le_inf
+            · have ha_eq : Φ₃ ≤ a =ᴮ x.func i := by
+                dsimp [Φ₃, Φ₂]; exact (inf_le_left.trans inf_le_right).trans inf_le_right
+              have hz_eq : Φ₃ ≤ z =ᴮ y.func j := by
+                dsimp [Φ₃]; exact inf_le_right.trans inf_le_right
+              exact pair_congr ha_eq hz_eq
+            · have ha_eq : Φ₃ ≤ a =ᴮ x.func i := by
+                dsimp [Φ₃, Φ₂]; exact (inf_le_left.trans inf_le_right).trans inf_le_right
+              have ha_not_S : Φ₃ ≤ (a ∈ᴮ S)ᶜ := by
+                dsimp [Φ₃, Φ₂, Φ₁]; exact (inf_le_left.trans inf_le_left).trans inf_le_right
+              have hi_not_S : Φ₃ ≤ (x.func i ∈ᴮ S)ᶜ := by
+                rw [show (x.func i ∈ᴮ S)ᶜ = lattice.imp (x.func i ∈ᴮ S) ⊥ by simp [lattice.imp]]
+                apply lattice.bv_imp_intro
+                have h_mem_a : Φ₃ ⊓ (x.func i ∈ᴮ S) ≤ a ∈ᴮ S :=
+                  subst_congr_mem_left' (inf_le_left.trans (bv_symm ha_eq)) inf_le_right
+                have h_not_a : Φ₃ ⊓ (x.func i ∈ᴮ S) ≤ (a ∈ᴮ S)ᶜ :=
+                  inf_le_left.trans ha_not_S
+                calc
+                  Φ₃ ⊓ (x.func i ∈ᴮ S) ≤ (a ∈ᴮ S) ⊓ (a ∈ᴮ S)ᶜ := le_inf h_mem_a h_not_a
+                  _ = ⊥ := by simp
+              have hz_eq : Φ₃ ≤ z =ᴮ y.func j := by
+                dsimp [Φ₃]; exact inf_le_right.trans inf_le_right
+              exact le_trans (le_inf hi_not_S (bv_symm hz_eq))
+                (le_sup_right
+                  (a := (x.func i ∈ᴮ S) ⊓ (pair (x.func i) (y.func j) ∈ᴮ f))
+                  (b := ((x.func i ∈ᴮ S)ᶜ) ⊓ (y.func j =ᴮ z)))
   · -- Part 2: Θ ≤ is_surj x y g
-    sorry
+    unfold is_surj
+    apply le_iInf; intro v
+    apply lattice.bv_imp_intro
+    let Φ : 𝔹 := Θ ⊓ v ∈ᴮ y
+    have h_surj_at_v : Θ ⊓ v ∈ᴮ y ≤ ⨆ w : bSet 𝔹, w ∈ᴮ S ⊓ pair w v ∈ᴮ f := by
+      unfold is_surj at h_surj_Θ
+      have h_imp : Θ ≤ lattice.imp (v ∈ᴮ y)
+          (⨆ w : bSet 𝔹, w ∈ᴮ S ⊓ pair w v ∈ᴮ f) :=
+        h_surj_Θ.trans (iInf_le _ v)
+      exact lattice.bv_context_apply (inf_le_left.trans h_imp) inf_le_right
+    have h_cases : Φ ≤ ⨆ w : bSet 𝔹, w ∈ᴮ S ⊓ pair w v ∈ᴮ f := by
+      dsimp [Φ]; exact h_surj_at_v
+    apply (le_inf le_rfl h_cases).trans
+    apply lattice.bv_cases_right
+    intro w
+    let Ψ : 𝔹 := Φ ⊓ (w ∈ᴮ S ⊓ pair w v ∈ᴮ f)
+    apply lattice.bv_use w
+    apply le_inf
+    · have hwS : Ψ ≤ w ∈ᴮ S := by dsimp [Ψ]; exact inf_le_right.trans inf_le_left
+      have hΨ_sub : Ψ ≤ S ⊆ᴮ x := by dsimp [Ψ, Φ]; exact (inf_le_left.trans inf_le_left).trans h_sub_Θ
+      exact mem_of_mem_subset' hΨ_sub hwS
+    · dsimp [g]; rw [mem_subset.mk_iff₂]
+      have hwS : Ψ ≤ w ∈ᴮ S := by dsimp [Ψ]; exact inf_le_right.trans inf_le_left
+      have h_pair_f : Ψ ≤ pair w v ∈ᴮ f := by dsimp [Ψ]; exact inf_le_right.trans inf_le_right
+      have hwx : Ψ ≤ w ∈ᴮ x :=
+        mem_of_mem_subset' (by dsimp [Ψ, Φ]; exact (inf_le_left.trans inf_le_left).trans h_sub_Θ) hwS
+      have hvy : Ψ ≤ v ∈ᴮ y := by dsimp [Ψ, Φ]; exact inf_le_left.trans inf_le_right
+      rw [mem_unfold] at hwx
+      apply (le_inf le_rfl hwx).trans
+      apply lattice.bv_cases_right
+      intro i
+      let Ψ₂ : 𝔹 := Ψ ⊓ (x.bval i ⊓ w =ᴮ x.func i)
+      rw [mem_unfold] at hvy
+      apply (le_inf le_rfl (inf_le_left.trans hvy)).trans
+      apply lattice.bv_cases_right
+      intro j
+      let Ψ₃ : 𝔹 := Ψ₂ ⊓ (y.bval j ⊓ v =ᴮ y.func j)
+      apply lattice.bv_use (i, j)
+      apply le_inf
+      · dsimp [Ψ₃, Ψ₂, bSet.prod]
+        exact le_inf
+          ((inf_le_left.trans inf_le_right).trans inf_le_left)
+          (inf_le_right.trans inf_le_left)
+      · apply le_inf
+        · have hw_eq : Ψ₃ ≤ w =ᴮ x.func i := by
+            dsimp [Ψ₃, Ψ₂]; exact (inf_le_left.trans inf_le_right).trans inf_le_right
+          have hv_eq : Ψ₃ ≤ v =ᴮ y.func j := by
+            dsimp [Ψ₃]; exact inf_le_right.trans inf_le_right
+          exact pair_congr hw_eq hv_eq
+        · have hw_eq : Ψ₃ ≤ w =ᴮ x.func i := by
+            dsimp [Ψ₃, Ψ₂]; exact (inf_le_left.trans inf_le_right).trans inf_le_right
+          have hv_eq : Ψ₃ ≤ v =ᴮ y.func j := by
+            dsimp [Ψ₃]; exact inf_le_right.trans inf_le_right
+          have h_pair_f' : Ψ₃ ≤ pair w v ∈ᴮ f :=
+            (inf_le_left.trans inf_le_left).trans h_pair_f
+          have h_pair_eq : Ψ₃ ≤ pair w v =ᴮ pair (x.func i) (y.func j) :=
+            pair_congr hw_eq hv_eq
+          have h_f_i_j : Ψ₃ ≤ pair (x.func i) (y.func j) ∈ᴮ f :=
+            subst_congr_mem_left' h_pair_eq h_pair_f'
+          have h_wS' : Ψ₃ ≤ w ∈ᴮ S :=
+            (inf_le_left.trans inf_le_left).trans hwS
+          have h_iS : Ψ₃ ≤ x.func i ∈ᴮ S :=
+            subst_congr_mem_left' hw_eq h_wS'
+          exact le_trans (le_inf h_iS h_f_i_j)
+            (le_sup_left
+              (a := (x.func i ∈ᴮ S) ⊓ (pair (x.func i) (y.func j) ∈ᴮ f))
+              (b := ((x.func i ∈ᴮ S)ᶜ) ⊓ (y.func j =ᴮ z)))
 
 lemma AE_of_check_larger_than_check {x y : pSet.{u}} {Γ : 𝔹}
     (H_nonzero : ⊥ < Γ) (H : Γ ≤ larger_than (check x) (check y))
@@ -773,5 +964,219 @@ lemma AE_of_check_larger_than_check {x y : pSet.{u}} {Γ : 𝔹}
   exact AE_of_check_larger_than_check' H_nonzero h_surj H_mem
 
 end cardinal_preservation
+
+section neg_CH
+
+local notation "ℵ₀" => (omega : bSet 𝔹)
+local notation "𝔠" => (bv_powerset ℵ₀ : bSet 𝔹)
+local notation "𝔹₀" => (𝔹_cohen : Type)
+local notation "ℵ₀₀" => (omega : bSet 𝔹₀)
+local notation "𝔠₀" => (bv_powerset ℵ₀₀ : bSet 𝔹₀)
+
+lemma uncountable_fiber_of_card_lt {α β : Type u} (hωα : cardinal.omega ≤ Cardinal.mk α)
+    (hαβ : Cardinal.mk α < Cardinal.mk β) (g : β → α) :
+    ∃ ξ : α, cardinal.omega < Cardinal.mk (g ⁻¹' ({ξ} : Set α)) := by
+  have hωβ : cardinal.omega ≤ Cardinal.mk β := hωα.trans hαβ.le
+  rcases Cardinal.infinite_pigeonhole_card_lt g hαβ hωβ with ⟨ξ, hξ⟩
+  exact ⟨ξ, lt_of_le_of_lt hωα hξ⟩
+
+lemma not_CCC_of_uncountable_fiber (η₁ η₂ : pSet.{u})
+    (H_infinite : cardinal.omega ≤ Cardinal.mk η₁.Type)
+    (H_inj₂ : ∀ x y : η₂.Type, x ≠ y → ¬ PSet.Equiv (η₂.Func x) (η₂.Func y))
+    (f : bSet 𝔹) (g : η₂.Type → η₁.Type)
+    (H : ∀ β : η₂.Type,
+      ⊥ < (is_func f) ⊓
+        (pair (check (η₁.Func (g β)) : bSet 𝔹) (check (η₂.Func β) : bSet 𝔹) ∈ᴮ f))
+    (H_ex : ∃ ξ : η₁.Type, cardinal.omega < Cardinal.mk (g ⁻¹' ({ξ} : Set η₁.Type))) :
+    ¬ BA_CCC (𝔹 : Type u) := by
+  classical
+  rcases H_ex with ⟨ξ, hξ⟩
+  let A : (g ⁻¹' ({ξ} : Set η₁.Type)) → 𝔹 := fun β =>
+    (is_func f) ⊓
+      (pair (check (η₁.Func (g β.val)) : bSet 𝔹)
+        (check (η₂.Func β.val) : bSet 𝔹) ∈ᴮ f)
+  have hA_nonzero : ∀ β, A β ≠ ⊥ := by
+    intro β hbot
+    exact (ne_of_gt (H β.val)) hbot
+  have hA_anti : ∀ β₁ β₂ : (g ⁻¹' ({ξ} : Set η₁.Type)),
+      β₁ ≠ β₂ → A β₁ ⊓ A β₂ = ⊥ := by
+    intro β₁ β₂ hne
+    apply le_antisymm ?_ bot_le
+    let Γ : 𝔹 := A β₁ ⊓ A β₂
+    have hValNe : β₁.val ≠ β₂.val := by
+      intro hval
+      exact hne (Subtype.ext hval)
+    have hFunc : Γ ≤ is_func f := by
+      dsimp [Γ, A]
+      exact inf_le_left.trans inf_le_left
+    have hMem₁ : Γ ≤
+        pair (check (η₁.Func (g β₁.val)) : bSet 𝔹)
+          (check (η₂.Func β₁.val) : bSet 𝔹) ∈ᴮ f := by
+      dsimp [Γ, A]
+      exact inf_le_left.trans inf_le_right
+    have hMem₂ : Γ ≤
+        pair (check (η₁.Func (g β₂.val)) : bSet 𝔹)
+          (check (η₂.Func β₂.val) : bSet 𝔹) ∈ᴮ f := by
+      dsimp [Γ, A]
+      exact inf_le_right.trans inf_le_right
+    have hg₁ : g β₁.val = ξ := by
+      exact Set.mem_singleton_iff.mp (show g β₁.val ∈ ({ξ} : Set η₁.Type) from β₁.property)
+    have hg₂ : g β₂.val = ξ := by
+      exact Set.mem_singleton_iff.mp (show g β₂.val ∈ ({ξ} : Set η₁.Type) from β₂.property)
+    have hInput :
+        Γ ≤ (check (η₁.Func (g β₁.val)) : bSet 𝔹) =ᴮ
+          (check (η₁.Func (g β₂.val)) : bSet 𝔹) := by
+      rw [hg₁, hg₂]
+      exact bv_refl
+    have hOutput :
+        Γ ≤ (check (η₂.Func β₁.val) : bSet 𝔹) =ᴮ
+          (check (η₂.Func β₂.val) : bSet 𝔹) :=
+      eq_of_is_func_of_eq hFunc hInput hMem₁ hMem₂
+    have hOutputBot :
+        ((check (η₂.Func β₁.val) : bSet 𝔹) =ᴮ
+          (check (η₂.Func β₂.val) : bSet 𝔹)) = ⊥ :=
+      check_bv_eq_bot_of_not_equiv (H_inj₂ β₁.val β₂.val hValNe)
+    rwa [hOutputBot] at hOutput
+  intro hCCC
+  let s : Set 𝔹 := Set.range A
+  have hsNonzero : ∀ a ∈ s, a ≠ ⊥ := by
+    intro a ha
+    rcases ha with ⟨β, rfl⟩
+    exact hA_nonzero β
+  have hsDisj : ∀ a ∈ s, ∀ b ∈ s, a ≠ b → a ⊓ b = ⊥ := by
+    intro a ha b hb hab
+    rcases ha with ⟨β₁, rfl⟩
+    rcases hb with ⟨β₂, rfl⟩
+    have hne : β₁ ≠ β₂ := by
+      intro hβ
+      exact hab (by rw [hβ])
+    exact hA_anti β₁ β₂ hne
+  have hsCount : s.Countable := hCCC s hsNonzero hsDisj
+  have hA_inj : Set.InjOn A (Set.univ : Set (g ⁻¹' ({ξ} : Set η₁.Type))) := by
+    intro β₁ _ β₂ _ hEq
+    by_contra hne
+    have hbot := hA_anti β₁ β₂ hne
+    rw [hEq] at hbot
+    have hAβ₂Bot : A β₂ = ⊥ := by simpa using hbot
+    exact hA_nonzero β₂ hAβ₂Bot
+  have hFiberCount : (Set.univ : Set (g ⁻¹' ({ξ} : Set η₁.Type))).Countable :=
+    Set.countable_of_injective_of_countable_image hA_inj (by
+      simpa [s, Set.image_univ] using hsCount)
+  haveI : Countable (g ⁻¹' ({ξ} : Set η₁.Type)) :=
+    Set.countable_univ_iff.mp hFiberCount
+  exact not_lt_of_ge (Cardinal.mk_le_aleph0 (α := g ⁻¹' ({ξ} : Set η₁.Type))) hξ
+
+/-- Canonicalize a member index of `ℵ₂` by its represented ordinal.  This avoids depending on
+raw indices of `Ordinal.toPSet`, which may contain extensionally equal representatives. -/
+noncomputable def canonAlephTwoIndex (i : pSet.aleph_two.Type) : pSet.aleph_two.Type :=
+  cast (by simp [pSet.aleph_two, pSet.card_ex])
+    ((pSet.mkTypeEquiv (Cardinal.ord (Cardinal.aleph 2))).symm
+      (Ordinal.ToType.mk
+        ⟨pSet.ordOfMemMk (η := Cardinal.ord (Cardinal.aleph 2))
+          (cast (by simp [pSet.aleph_two, pSet.card_ex]) i),
+         pSet.ordOfMemMk_lt _⟩))
+
+lemma canonAlephTwoIndex_eq_of_equiv {i j : pSet.aleph_two.Type}
+    (h : PSet.Equiv (pSet.aleph_two.Func i) (pSet.aleph_two.Func j)) :
+    canonAlephTwoIndex i = canonAlephTwoIndex j := by
+  dsimp [canonAlephTwoIndex]
+  congr 3
+  apply Subtype.ext
+  exact pSet.ordOfMemMk_eq_of_equiv (by
+    simpa [pSet.aleph_two, pSet.card_ex] using h)
+
+lemma ordOfMemMk_eq_of_canonAlephTwoIndex_eq {i j : pSet.aleph_two.Type}
+    (h : canonAlephTwoIndex i = canonAlephTwoIndex j) :
+    pSet.ordOfMemMk (η := Cardinal.ord (Cardinal.aleph 2))
+        (cast (by simp [pSet.aleph_two, pSet.card_ex]) i) =
+      pSet.ordOfMemMk (η := Cardinal.ord (Cardinal.aleph 2))
+        (cast (by simp [pSet.aleph_two, pSet.card_ex]) j) := by
+  have hToType := congrArg (fun x : pSet.aleph_two.Type =>
+      (pSet.mkTypeEquiv (Cardinal.ord (Cardinal.aleph 2)))
+        (cast (by simp [pSet.aleph_two, pSet.card_ex]) x)) h
+  dsimp [canonAlephTwoIndex] at hToType
+  have hIio := congrArg (Ordinal.ToType.mk (o := Cardinal.ord (Cardinal.aleph 2))).symm hToType
+  simpa using (Subtype.ext_iff.mp hIio)
+
+lemma alephTwo_func_equiv_of_canonAlephTwoIndex_eq {i j : pSet.aleph_two.Type}
+    (h : canonAlephTwoIndex i = canonAlephTwoIndex j) :
+    PSet.Equiv (pSet.aleph_two.Func i) (pSet.aleph_two.Func j) := by
+  let i' : (ordinal.mk (Cardinal.ord (Cardinal.aleph 2))).Type :=
+    cast (by simp [pSet.aleph_two, pSet.card_ex]) i
+  let j' : (ordinal.mk (Cardinal.ord (Cardinal.aleph 2))).Type :=
+    cast (by simp [pSet.aleph_two, pSet.card_ex]) j
+  have hOrd :
+      pSet.ordOfMemMk i' = pSet.ordOfMemMk j' := by
+    dsimp [i', j']
+    exact ordOfMemMk_eq_of_canonAlephTwoIndex_eq h
+  have hi : PSet.Equiv (pSet.aleph_two.Func i) (ordinal.mk (pSet.ordOfMemMk i')) := by
+    simpa [pSet.aleph_two, pSet.card_ex, i'] using
+      pSet.func_equiv_ordOfMemMk (η := Cardinal.ord (Cardinal.aleph 2)) (i := i')
+  have hj : PSet.Equiv (pSet.aleph_two.Func j) (ordinal.mk (pSet.ordOfMemMk j')) := by
+    simpa [pSet.aleph_two, pSet.card_ex, j'] using
+      pSet.func_equiv_ordOfMemMk (η := Cardinal.ord (Cardinal.aleph 2)) (i := j')
+  exact hi.trans ((pSet.mk_equiv_of_eq hOrd).trans hj.symm)
+
+noncomputable def neg_CH_func : bSet 𝔹₀ :=
+  bSet.function.mk' (x := (check pSet.aleph_two : bSet 𝔹₀)) (y := 𝔠₀)
+    (fun i : (check pSet.aleph_two : bSet 𝔹₀).type =>
+      fun n : (omega : bSet 𝔹₀).type =>
+        cohen_real.χ (canonAlephTwoIndex (check_cast i)) n.down)
+    (fun _ => ⊤)
+
+theorem ℵ₂_le_𝔠 {Γ : 𝔹₀} :
+    Γ ≤ is_func' (check pSet.aleph_two : bSet 𝔹₀) 𝔠₀ neg_CH_func ⊓ is_inj neg_CH_func := by
+  refine le_inf ?_ ?_
+  · exact is_func'_of_is_function
+      (bSet.function.mk'_is_function
+        (x := (check pSet.aleph_two : bSet 𝔹₀)) (y := 𝔠₀)
+        (fun i : (check pSet.aleph_two : bSet 𝔹₀).type =>
+          fun n : (omega : bSet 𝔹₀).type =>
+            cohen_real.χ (canonAlephTwoIndex (check_cast i)) n.down)
+        (fun _ => ⊤)
+        (by
+          intro i j Γ' hEq
+          by_cases hEquiv : PSet.Equiv (pSet.aleph_two.Func (check_cast i))
+              (pSet.aleph_two.Func (check_cast j))
+          · have hCanon : canonAlephTwoIndex (check_cast i) =
+                canonAlephTwoIndex (check_cast j) :=
+              canonAlephTwoIndex_eq_of_equiv hEquiv
+            change Γ' ≤ cohen_real.mk (canonAlephTwoIndex (check_cast i)) =ᴮ
+              cohen_real.mk (canonAlephTwoIndex (check_cast j))
+            rw [hCanon]
+            exact bv_refl
+          · have hBot :
+                ((check pSet.aleph_two : bSet 𝔹₀).func i =ᴮ
+                  (check pSet.aleph_two : bSet 𝔹₀).func j) = ⊥ := by
+              rw [check_func, check_func]
+              exact check_bv_eq_bot_of_not_equiv hEquiv
+            rw [hBot] at hEq
+            exact hEq.trans bot_le)
+        (by
+          intro i Γ' hVal
+          exact ⟨le_top, le_top⟩))
+  · exact bSet.function.mk'_is_inj
+      (x := (check pSet.aleph_two : bSet 𝔹₀)) (y := 𝔠₀)
+      (fun i : (check pSet.aleph_two : bSet 𝔹₀).type =>
+        fun n : (omega : bSet 𝔹₀).type =>
+          cohen_real.χ (canonAlephTwoIndex (check_cast i)) n.down)
+      (fun _ => ⊤)
+      (by
+        intro i j Γ' hEq
+        by_cases hCanon : canonAlephTwoIndex (check_cast i) =
+            canonAlephTwoIndex (check_cast j)
+        · rw [check_func, check_func]
+          exact check_eq (alephTwo_func_equiv_of_canonAlephTwoIndex_eq hCanon)
+        · apply lattice.bv_exfalso
+          change Γ' ≤ cohen_real.mk (canonAlephTwoIndex (check_cast i)) =ᴮ
+            cohen_real.mk (canonAlephTwoIndex (check_cast j)) at hEq
+          exact hEq.trans (cohen_real.inj hCanon))
+
+theorem ℵ₂_injects_𝔠 {Γ : 𝔹₀} :
+    Γ ≤ injects_into (check pSet.aleph_two : bSet 𝔹₀) 𝔠₀ := by
+  unfold injects_into
+  exact le_iSup_of_le neg_CH_func ℵ₂_le_𝔠
+
+end neg_CH
 
 end Flypitch
