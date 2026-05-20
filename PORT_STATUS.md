@@ -95,8 +95,9 @@ the verified-surface summary below.
   extensionality/functionality/totality/surjectivity, dense-basis reflection for checked
   `omega -> 2` functions, `check_functions_eq_functions`, `continuum_le_continuum_check`,
   `CH₂_true`, and `CH_true`.
-- [ ] Reconnect the logic and forcing branches through `bfol`, `zfc`, `print_formula`, and `summary`.
-- [ ] Re-establish `independence_of_CH`.
+- [x] Reconnect the logic and forcing branches through `bfol`, `zfc`, and `summary`
+  (`print_formula` was not needed for the theorem path).
+- [x] Re-establish `independence_of_CH`.
 
 ## Verification Policy
 
@@ -197,8 +198,9 @@ files themselves.
   `bSet_models_zorn`, and the full Boolean-valued model theorem `bSet_models_ZFC` compiles. The
   collapse-side unprovability theorem `neg_CH_f_unprovable` is now connected via
   `ForcingCH.CH₂_true` and the Boolean-valued double-negation helper
-  `forced_not_not_of_forced`. The Cohen `¬CH₂` endpoint, `CH_f_unprovable`, `print_formula`,
-  `summary`, and `independence_of_CH` remain open.
+  `forced_not_not_of_forced`. The Cohen `¬CH₂` endpoint is connected as `Forcing.not_CH₂`,
+  yielding `CH_f_unprovable`. `Flypitch/Summary.lean` now exposes `independent`,
+  `CH_unprovable`, `neg_CH_unprovable`, and `independence_of_CH`.
 - Forcing branch: `Flypitch/Forcing.lean` is connected to `Flypitch.lean` and compiles without
   placeholders through the Cohen forcing cardinal-preservation argument, including the extension
   from a subset-surjection witness in `larger_than x y` plus nonemptiness of `y` to an internal
@@ -252,17 +254,15 @@ files themselves.
 
 ## Current Frontier
 
-`lake build` succeeds for the current port surface. The remaining work is concentrated on the
-integration side, not the completed logic/completeness or forcing branches.
+`lake build` succeeds for the current port surface. The final theorem path is connected through:
 
-Next useful tranches:
-
-1. Finish the Cohen forcing `¬CH₂` endpoint from the cardinal-preservation bridge currently in
-   `Flypitch/Forcing.lean`.
-2. Use `bSet_models_ZFC` and the Cohen `¬CH₂` endpoint to prove `CH_f_unprovable`.
-3. Add `print_formula` only if needed, then port `summary` and recover `independence_of_CH`.
+1. `Forcing.not_CH₂` for the Cohen `¬CH₂` endpoint.
+2. `ForcingCH.CH₂_true` for the collapse `CH₂` endpoint.
+3. `ZFC.CH_f_unprovable` and `ZFC.neg_CH_f_unprovable`.
+4. `Summary.independence_of_CH`.
 
 ## Remaining Target
 
-The repository still does not prove `independence_of_CH`. The final goal remains open until
-`src/summary.lean` is represented and the theorem is recovered in Lean 4.
+The repository proves `Flypitch.independence_of_CH`; `Flypitch/Summary.lean` represents the
+upstream summary endpoint without the executable pretty-printing layer, which is not needed for
+the theorem.
