@@ -1,167 +1,109 @@
 import Verso
 import VersoManual
 import VersoBlueprint
-import Flypitch.Compactness
-import Flypitch.Completion
+import Flypitch.BFOL
+import Flypitch.BVM
+import Flypitch.BVMExtras
+import Flypitch.ZFC
 
 open Verso.Genre
 open Verso.Genre.Manual
 open Informal
 
-#doc (Manual) "Compactness And Completion" =>
+set_option linter.hashCommand false
+set_option linter.style.emptyLine false
 
-The next step is to understand how consistency behaves under enlarging a
-theory. The formalized route is the classical one: first prove that any proof
-uses only finitely many assumptions, then use this finitary principle to build
-maximal and hence complete consistent extensions. This chapter corresponds to
-`Flypitch/Compactness.lean` and `Flypitch/Completion.lean`.
+#doc (Manual) "Boolean-Valued Models" =>
 
-# Compactness As A Finitary Principle
+Classical first-order semantics evaluates each sentence as true or false. A
+Boolean-valued model refines this by assigning each sentence an element of a
+complete Boolean algebra. The top element represents full truth, the bottom
+element full falsity, and intermediate elements record conditions under which
+the sentence holds.
 
-The later Henkin construction repeatedly adds new sentences to a theory. To
-show that these enlargements preserve consistency, it is enough to know that an
-inconsistency can already be witnessed inside some finite fragment. The
-repository proves exactly this statement in proof-theoretic form.
+# Complete Boolean Algebras As Truth Values
 
-:::theorem "thm:proof-compactness" (lean := "Flypitch.fol.proof_compactness")
-If a formula $`\psi` is derivable from a set $`T` of formulas, then there
-exists a finite subset $`\Gamma \subseteq T` such that $`\Gamma \vdash \psi`.
+For forcing, the Boolean algebra is not decoration. Its elements are
+conditions, and the order expresses strengthening. Infima behave like logical
+"and", suprema like "or", and complement like negation.
 
-This theorem is phrased in terms of {uses "def:fol-derivability"}[].
+:::definition "def:boolean-valued-structure" (lean := "Flypitch.fol.bStructure")
+A Boolean-valued structure interprets relation symbols as Boolean-valued
+relations and function symbols as ordinary functions on the underlying type.
 :::
 
-:::proof "thm:proof-compactness"
-The proof is by induction on a derivation of $`\psi`. Each inference rule uses
-only finitely many assumptions, and finite supports are combined by taking
-finite unions. The only delicate point is universal introduction, where one
-must descend from a lifted theory back to a finite family of original
-assumptions.
+:::theorem "thm:boolean-soundness" (lean := "Flypitch.fol.boolean_soundness")
+If a theory proves a sentence and a Boolean-valued structure forces the
+theory, then it also forces the sentence.
+
+This is the Boolean-valued analogue of {uses "thm:fol-soundness"}[].
 :::
 
-This is the precise finiteness statement needed later: a contradiction cannot
-depend essentially on infinitely many hypotheses at once.
+# The Universe Of Boolean-Valued Sets
 
-# Compactness For Theories
+The forcing models in the proof are built from Boolean-valued sets, written
+`bSet`. A Boolean-valued set is a tree of possible members, where each member
+is attached to a Boolean truth value.
 
-The rest of the development is phrased in terms of theories of sentences rather
-than arbitrary sets of formulas, so the same result is repackaged at the
-theory level.
-
-:::theorem "thm:theory-proof-compactness" (lean := "Flypitch.fol.theory_proof_compactness")
-If a sentence $`\psi` is provable from a theory $`T`, then there is a finite
-subtheory $`\Gamma \subseteq T` from which $`\psi` is already provable.
-
-This is the theory-level form of {uses "thm:proof-compactness"}[] and uses
-the sentence language provided by {uses "def:fol-bounded-syntax"}[].
+:::definition "def:bset" (lean := "Flypitch.bSet")
+For a complete Boolean algebra $`B`, `bSet B` is the type of Boolean-valued
+sets over $`B`.
 :::
 
-This is the form used in later consistency arguments. Whenever a large theory
-is inconsistent, the obstruction already appears in a finite collection of its
-sentences.
+Membership and equality are themselves Boolean-valued:
 
-# Controlled Unions
+- `x ∈ᴮ y` is the Boolean value of "x is a member of y".
+- `x =ᴮ y` is the Boolean value of extensional equality.
 
-Compactness immediately gives a useful principle for enlarging consistent
-theories.
+This is the key idea that makes set theory available inside a Boolean algebra.
+Set-theoretic formulas are interpreted by recursively evaluating membership,
+equality, connectives, and quantifiers in the Boolean algebra.
 
-:::theorem "prop:consistent-union" (lean := "Flypitch.fol.is_consistent_union")
-Let $`T_1` be a consistent theory. Suppose that every sentence $`\psi` in a
-second theory $`T_2` can be added to $`T_1` without forcing inconsistency in
-the relevant one-step sense. Then the union $`T_1 \cup T_2` is consistent.
+# Ground-Model Sets
 
-This theorem is driven by {uses "thm:theory-proof-compactness"}[].
+Every ordinary set from the ground universe has a canonical Boolean-valued
+name. In Lean this operation is written `check`.
+
+:::definition "def:check-name" (lean := "Flypitch.bSet.check")
+The checked name `check x` embeds an ordinary pre-set into the Boolean-valued
+universe.
 :::
 
-:::proof "prop:consistent-union"
-Assume the union were inconsistent. Then
-{uses "thm:theory-proof-compactness"}[] produces a finite fragment that is
-already inconsistent. One then adds the finitely many sentences coming from
-$`T_2` one at a time and uses the hypothesis at each step to rule out the
-appearance of a contradiction.
+Checked names let the forcing construction compare the internal universe with
+familiar objects such as `omega`, `aleph_one`, and `aleph_two`.
+
+# Forcing Notation
+
+If $`\Gamma` is an element of the Boolean algebra and $`\varphi` is a formula,
+then saying that $`\Gamma` forces $`\varphi` means that $`\Gamma` lies below
+the Boolean value of $`\varphi`. In particular, top forces a sentence exactly
+when the sentence has Boolean value top.
+
+:::definition "def:forces" (lean := "Flypitch.fol.forces")
+The forcing relation records that a Boolean condition is below the Boolean
+truth value of a formula in a Boolean-valued structure.
 :::
 
-This is the first general tool showing that a large extension can be handled by
-checking one sentence at a time. It will be reused in the Henkin chapter.
+# Boolean-Valued ZFC
 
-# Chains Of Consistent Extensions
+The Boolean-valued set universe is not merely a model of a fragment. It
+forces the ZFC axioms used by the proof.
 
-To pass from a consistent theory to a maximal one, one considers the partially
-ordered set of all consistent extensions ordered by inclusion. The key point is
-that any chain of such extensions has an upper bound, namely its union.
+:::theorem "thm:bset-models-zfc" (lean := "Flypitch.ZFC.bSet_models_ZFC")
+For every complete Boolean algebra, the Boolean-valued universe of `bSet`s
+forces the theory `ZFC`.
 
-:::theorem "lem:finite-subset-limit-theory"
-Let $`c` be a nonempty chain of consistent extensions of a theory $`T`. Every
-finite subset of the union of the chain is already contained in a single member
-of the chain.
+This theorem combines {uses "def:bset"}[], {uses "def:forces"}[], and the
+set-theoretic encoding described in {uses "def:zfc-theory"}[].
 :::
 
-This is immediate from finite induction and total comparability inside the
-chain.
+Together, Boolean-valued soundness and the theorem that `bSet` forces ZFC form
+the semantic engine of the independence proof: a formal theorem of ZFC must
+hold in every Boolean-valued universe.
 
-:::theorem "prop:consis-limit" (lean := "Flypitch.fol.consis_limit")
-The union of a chain of consistent extensions of $`T` is again consistent.
+# Lean Side Notes
 
-This uses {uses "lem:finite-subset-limit-theory"}[] together with
-{uses "thm:theory-proof-compactness"}[].
-:::
-
-:::proof "prop:consis-limit"
-If the union were inconsistent, compactness would produce a finite inconsistent
-subtheory. By {uses "lem:finite-subset-limit-theory"}[], that finite fragment
-would already lie in one element of the chain, contradicting the consistency of
-that element.
-:::
-
-# Maximal Consistent Extensions
-
-Once unions of chains are known to preserve consistency, Zorn's lemma applies.
-
-:::theorem "thm:maximal-extension" (lean := "Flypitch.fol.maximal_extension")
-Every consistent theory has a maximal consistent extension.
-
-This theorem depends on {uses "prop:consis-limit"}[].
-:::
-
-Maximality then yields the expected dichotomy for sentences.
-
-:::theorem "prop:maximal-is-complete" (lean := "Flypitch.fol.complete_maximal_extension_of_consis")
-If $`T_{\max}` is maximal among the consistent extensions of a theory $`T`,
-then $`T_{\max}` is complete.
-
-This combines {uses "thm:maximal-extension"}[] and
-{uses "prop:consistent-union"}[].
-:::
-
-:::proof "prop:maximal-is-complete"
-Let $`\psi` be any sentence. If neither $`\psi` nor $`\neg \psi` lies in
-$`T_{\max}`, then one of the two one-sentence enlargements remains consistent.
-That contradicts maximality.
-:::
-
-:::corollary "cor:completion-of-consistent-theory" (lean := "Flypitch.fol.completion_of_consis")
-Every consistent theory has a complete consistent extension.
-
-This is the immediate consequence of {uses "thm:maximal-extension"}[] and
-{uses "prop:maximal-is-complete"}[].
-:::
-
-# Why This Matters Later
-
-The role of this chapter is straightforward.
-
-- compactness turns inconsistency questions into finite calculations
-- controlled unions show how to adjoin families of new sentences while
-  tracking consistency
-- completion turns a merely consistent theory into one that decides every
-  sentence
-
-These are exactly the abstract ingredients needed before witness constants can
-be adjoined systematically in the Henkin construction.
-
-# Formalization Note
-
-The Lean development packages these ideas through the theorems
-`proof_compactness`, `theory_proof_compactness`, `is_consistent_union`,
-`consis_limit`, `maximal_extension`, and
-`complete_maximal_extension_of_consis`. The mathematical content, however, is
-the standard compactness-and-Zorn argument just described.
+The main Lean objects are `bStructure`, `forces`, `bSet`, Boolean membership
+`∈ᴮ`, Boolean equality `=ᴮ`, and checked names `check`. The theorem
+`bSet_models_ZFC` supplies the model-of-ZFC premise used in both
+unprovability arguments.

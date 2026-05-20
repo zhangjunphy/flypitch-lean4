@@ -9,22 +9,25 @@ import FlypitchBlueprint.Chapters.CompactnessCompletion
 import FlypitchBlueprint.Chapters.ColimitsLanguageExtension
 import FlypitchBlueprint.Chapters.Henkinization
 import FlypitchBlueprint.Chapters.StatusNextFrontier
+import FlypitchBlueprint.Chapters.PuttingProofTogether
 
 open Verso.Genre
 open Verso.Genre.Manual
 open Informal
 
 set_option verso.blueprint.numbering "global"
+set_option linter.hashCommand false
 
-#doc (Manual) "Flypitch Lean 4 Blueprint" =>
+#doc (Manual) "Flypitch: The Independence Of CH" =>
 
-This Blueprint is the planned `verso-blueprint` port of the repository's
-current LaTeX blueprint.
+This blueprint explains the mathematical proof that the continuum hypothesis
+is independent of ZFC, with Lean declarations serving as verification anchors.
 
-The initial scaffold keeps the existing TeX pipeline untouched while the
-content is migrated chapter by chapter into Verso modules. Until the migration
-is complete, the current source of truth for published blueprint prose remains
-under `blueprint/src/`.
+The proof has the classical shape. First-order logic turns formal derivations
+into semantic consequences. Boolean-valued models then give two semantic
+tests: one Boolean-valued universe satisfies CH, while another satisfies its
+negation. Since every theorem of ZFC is valid in every Boolean-valued model of
+ZFC, these two universes rule out derivations of both CH and not-CH.
 
 {include 0 FlypitchBlueprint.Chapters.Overview}
 {include 0 FlypitchBlueprint.Chapters.FOLCore}
@@ -32,6 +35,7 @@ under `blueprint/src/`.
 {include 0 FlypitchBlueprint.Chapters.ColimitsLanguageExtension}
 {include 0 FlypitchBlueprint.Chapters.Henkinization}
 {include 0 FlypitchBlueprint.Chapters.StatusNextFrontier}
+{include 0 FlypitchBlueprint.Chapters.PuttingProofTogether}
 
 {blueprint_graph}
 {blueprint_summary}

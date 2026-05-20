@@ -1,150 +1,151 @@
 import Verso
 import VersoManual
 import VersoBlueprint
-import Flypitch.FOL.Semantics
-import Flypitch.FOL.Bounded
-import Flypitch.FOL.Theory
+import Flypitch.FOL
+import Flypitch.Compactness
+import Flypitch.Completion
+import Flypitch.Colimit
+import Flypitch.LanguageExtension
+import Flypitch.Henkin
 import Flypitch.Examples.Abel
 
 open Verso.Genre
 open Verso.Genre.Manual
 open Informal
 
-#doc (Manual) "First-Order Logic Core" =>
+set_option linter.hashCommand false
+set_option linter.style.emptyLine false
 
-The first task is to fix a precise first-order language, define its syntax and
-semantics, and specify what it means to prove a formula from hypotheses. This
-chapter records the formalized core of that theory. It corresponds to the Lean
-files `Flypitch/FOL/Syntax.lean`, `Flypitch/FOL/Formula.lean`,
-`Flypitch/FOL/Proof.lean`, `Flypitch/FOL/Semantics.lean`,
-`Flypitch/FOL/Theory.lean`, and `Flypitch/FOL/Bounded.lean`.
+#doc (Manual) "First-Order Logic And Completeness" =>
+
+The independence proof is a statement about formal derivability. Before
+forcing enters, the proof needs a precise connection between syntax and
+semantics: proofs are finite symbolic objects, while models are mathematical
+structures in which sentences can be evaluated.
 
 # Languages, Terms, And Formulas
 
-:::definition "def:fol-language"
-A first-order language consists of function symbols and relation symbols, each
+:::definition "def:fol-language" (lean := "Flypitch.fol.Language")
+A first-order language specifies function symbols and relation symbols,
 sorted by arity.
 :::
 
-Once a language $`L` is fixed, one forms its terms and formulas in the usual
-way. The implementation uses de Bruijn variables, so bound variables are
-tracked numerically rather than by names. This choice is mathematically
-inessential, but it makes substitution and variable-shifting precise enough for
-the later completeness arguments.
+For example, the language of groups has a binary multiplication symbol, a
+unary inverse symbol, and a constant for the identity. A structure for this
+language chooses an underlying type and interprets those symbols as actual
+operations. The same formal sentence can then be tested in the integers, in a
+finite group, or in any other structure with those operations.
 
-The syntax is packaged in a slightly unusual arity-sensitive form: terms and
-formulas are first built as partially applied expressions and only later
-specialized to the closed cases. The advantage is that the basic structural
-operations can be treated uniformly across all arities.
+The language of set theory is even smaller at the relation level: it has the
+membership relation, together with selected function symbols used by the
+formal encoding of the ZFC axioms.
 
-:::definition "def:fol-structural-ops"
-The syntax carries two fundamental operations:
+:::definition "def:fol-syntax"
+Once a language is fixed, terms are built from variables and function symbols,
+and formulas are built from relation symbols, equality, logical connectives,
+and quantifiers.
 
-- lifting, which raises free variables above a chosen cutoff
-- substitution, which replaces a free variable by a term
-
-These operations belong to the syntax attached to {uses "def:fol-language"}[].
+The Lean development uses `preterm`, `preformula`, `bounded_term`, and
+`bounded_formula`.
 :::
 
-These are the bookkeeping operations behind every later argument. They are
-needed to formulate quantifier rules, to compare syntax under language maps,
-and to express the witness constructions appearing in the Henkin chapter.
+# Derivations And Soundness
 
-# Derivability
-
-:::definition "def:fol-derivability"
-For a set $`\Gamma` of formulas, the relation $`\Gamma \vdash A` is defined by
-a natural-deduction proof system with rules for assumptions, implication,
-universal quantification, falsity, equality, and substitution of equals.
-
-This relation is built on top of {uses "def:fol-language"}[] and
-{uses "def:fol-structural-ops"}[].
+:::definition "def:fol-derivability" (lean := "Flypitch.fol.prf")
+The relation $`\Gamma \vdash \varphi` means that the formula $`\varphi` has a
+formal derivation from the assumptions in $`\Gamma`.
 :::
 
-This is the proof-theoretic core of the development. The formalized system is
-strong enough for the compactness and completion arguments later on, and the
-repository proves the expected structural facts such as weakening and a family
-of derived introduction and elimination rules.
+A proof system is useful only if its rules respect the intended semantics.
+Soundness is that guarantee: anything derivable from true assumptions is true.
 
-# Structures And Satisfaction
-
-:::definition "def:fol-structure"
-An $`L`-structure consists of a carrier set together with interpretations of
-all function and relation symbols of $`L`.
-
-This definition depends on {uses "def:fol-language"}[].
+:::definition "def:fol-structure" (lean := "Flypitch.fol.Structure")
+An $`L`-structure consists of a carrier together with interpretations of all
+function and relation symbols of the language $`L`.
 :::
 
-Given a structure $`M` and a valuation of variables in $`M`, every term
-acquires an interpretation in $`M` and every formula acquires a truth value.
-Closed formulas may therefore be discussed without reference to a valuation,
-and one obtains the usual notion of semantic consequence.
+:::theorem "thm:fol-soundness" (lean := "Flypitch.fol.formula_soundness")
+If $`\Gamma \vdash \varphi`, then every structure satisfying all formulas in
+$`\Gamma` also satisfies $`\varphi`.
 
-The central compatibility theorem in this part of the development identifies
-syntactic substitution with semantic reassignment of variables. This is what
-allows the proof system to interact correctly with semantics.
-
-:::theorem "prop:formula-soundness" (lean := "Flypitch.fol.formula_soundness")
-If $`\Gamma \vdash A`, then every structure satisfying all formulas in
-$`\Gamma` also satisfies $`A`.
-
-$$`\Gamma \vdash A \implies \Gamma \models A`
-
-This proposition combines {uses "def:fol-derivability"}[],
-{uses "def:fol-structure"}[], and {uses "def:fol-structural-ops"}[].
+This theorem depends on {uses "def:fol-language"}[],
+{uses "def:fol-syntax"}[], {uses "def:fol-derivability"}[], and
+{uses "def:fol-structure"}[].
 :::
 
-:::proof "prop:formula-soundness"
-The proof is by induction on a derivation. Each inference rule is checked
-directly against the semantic definition of truth, with the lifting and
-substitution lemmas handling the quantifier and equality cases.
+The proof is by induction on the derivation. The quantifier and substitution
+cases are the main bookkeeping steps, because one must compare formulas before
+and after variables are reassigned.
+
+# Compactness And Complete Theories
+
+Formal derivations are finite. This simple fact becomes the compactness
+principle used throughout the completeness proof.
+
+:::theorem "thm:proof-compactness" (lean := "Flypitch.fol.proof_compactness")
+If a formula is derivable from a set of assumptions, then it is derivable from
+some finite subset of those assumptions.
+
+This uses {uses "def:fol-derivability"}[].
 :::
 
-# Sentences, Theories, And Bounded Syntax
+At the level of theories, compactness says that inconsistency is already
+visible in a finite fragment. This makes it possible to enlarge a consistent
+theory one sentence at a time.
 
-The later chapters work primarily with closed formulas, that is, with
-sentences. A theory is therefore taken to be a set of sentences. At this level
-one can define theory-level provability and satisfaction, together with the
-familiar notions of consistency and completeness.
+:::theorem "thm:completion" (lean := "Flypitch.fol.completion_of_consis")
+Every consistent first-order theory has a complete consistent extension.
 
-The development also isolates formulas with a prescribed number of free
-variables. This is not merely a technical refinement. The Henkin construction
-needs to speak uniformly about formulas in one free variable and then
-substitute closed terms into them.
-
-:::definition "def:fol-bounded-syntax"
-For each natural number $`n`, a bounded term or formula is a term or formula
-whose free variables lie among the first $`n` variables.
-
-This is a bounded version of the syntax built from
-{uses "def:fol-structural-ops"}[].
+This theorem uses {uses "thm:proof-compactness"}[].
 :::
 
-These bounded objects are the correct language for witness formulas, witness
-constants, and the quantified generalization arguments that appear later.
+Completeness here means that every sentence is decided: either the sentence or
+its negation belongs to the extended theory. The proof uses the usual maximal
+consistent extension argument.
 
-# A Model-Theoretic Example
+# Henkin Witnesses
 
-The file `Flypitch/Examples/Abel.lean` supplies a concrete example in the
-language of abelian groups. The axioms are interpreted in the integers, and the
-formalization verifies that the integer structure satisfies them.
+To build a model from a consistent theory, existential statements need named
+witnesses. The Henkin construction enlarges the language by adding constants
+for formulas in one free variable, then adds axioms saying that these constants
+serve as witnesses when a witness exists.
 
-:::theorem "prop:abelian-example" (lean := "Flypitch.int_satisfies_of_prf")
-The standard structure on $`\mathbb{Z}` is a model of the chosen theory of
-abelian groups.
+:::definition "def:henkin-language" (lean := "Flypitch.henkin.LInfty")
+The infinite Henkin language is the directed limit of the languages obtained
+by repeatedly adjoining witness constants.
 
-This example depends on {uses "prop:formula-soundness"}[].
+It uses the colimit and language-extension machinery from
+{uses "def:language-extension-tools"}[].
 :::
 
-This example has a clear mathematical purpose. It shows that the syntax,
-semantics, and proof system already interact correctly in a familiar setting
-before the blueprint moves on to the abstract compactness and completion
-machinery.
+:::theorem "thm:complete-henkinization" (lean := "Flypitch.henkin.completeHenkinizationOfConsis")
+Every consistent theory admits a complete Henkin extension in a larger
+language.
 
-# Formalization Note
+This theorem combines {uses "thm:completion"}[] with the Henkin witness
+construction.
+:::
 
-In Lean, the basic objects are implemented as the structures and types
-`Language`, `preterm`, `preformula`, `prf`, `Structure`, `Theory`,
-`bounded_term`, and `bounded_formula`. These names are useful when reading the
-code, but the mathematical content of the chapter is the ordinary first-order
-framework described above.
+:::definition "def:language-extension-tools" (lean := "Flypitch.colimit.colimit, Flypitch.fol.Lhom")
+Language maps, reducts, reflected formulas, and directed colimits let formulas
+and theories be compared across the languages introduced by Henkin witnesses.
+:::
+
+# A Small Example
+
+The abelian-group example illustrates the distinction between language,
+theory, and model. The language provides symbols such as addition and zero;
+the theory lists the group axioms and commutativity; the integers form a model
+because the usual integer operations satisfy those axioms.
+
+:::theorem "thm:abelian-example" (lean := "Flypitch.abel.int_satisfies_of_prf")
+The standard integer structure satisfies the formal abelian-group theory.
+:::
+
+# Lean Side Notes
+
+The logic side is anchored by the modules `Flypitch.FOL`,
+`Flypitch.Compactness`, `Flypitch.Completion`, `Flypitch.Colimit`,
+`Flypitch.LanguageExtension`, and `Flypitch.Henkin`. Their role in the
+independence proof is to justify the soundness principles that turn formal
+ZFC derivations into semantic facts about Boolean-valued universes.

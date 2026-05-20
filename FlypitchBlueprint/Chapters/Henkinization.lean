@@ -1,230 +1,77 @@
 import Verso
 import VersoManual
 import VersoBlueprint
-import Flypitch.Henkin
+import Flypitch.Forcing
+import Flypitch.ZFC
 
 open Verso.Genre
 open Verso.Genre.Manual
 open Informal
 
-#doc (Manual) "Henkinization" =>
+set_option linter.hashCommand false
+set_option linter.style.emptyLine false
 
-We now reach the central construction on the logic side. Starting from a
-consistent theory, one adjoins enough witness constants to ensure that every
-existential statement has a named witness in an enlarged language. The output
-is a consistent Henkin theory, and after applying completion one obtains a
-complete Henkin extension. This chapter documents the part of that argument
-implemented in `Flypitch/Henkin.lean`.
+#doc (Manual) "The Model Where CH Fails" =>
 
-# Adjoining Witness Constants In One Step
+To show that ZFC cannot prove CH, it is enough to find a Boolean-valued model
+of ZFC in which not-CH holds. The model in Flypitch is built from a
+Cohen-style Boolean algebra adding many new reals at once.
 
-Given a language $`L`, the first move is to enlarge it by adding one new
-constant for each bounded formula in one free variable.
+# Many Cohen Reals
 
-:::definition "def:henkin-one-step-language" (lean := "Flypitch.henkin.languageStep")
-The one-step Henkin extension of $`L` is the language obtained by adjoining, for
-every bounded formula $`f(x)`, a new constant intended to witness $`f`.
+The index set has size `aleph_two`. For each index, the forcing construction
+produces a Boolean-valued subset of omega. Intuitively, these are the new
+reals. Distinct indices are forced to give distinct reals, so the model sees
+an injection from `aleph_two` into the powerset of omega.
 
-This language extension is indexed by {uses "def:fol-bounded-syntax"}[].
+:::definition "def:cohen-algebra" (lean := "Flypitch.𝔹_cohen")
+The Cohen Boolean algebra used for the not-CH model is built from regular
+opens over the space of functions from `aleph_two x omega` to two values.
 :::
 
-This is the formal version of the usual idea from the completeness proof: if
-one wants existential statements to have canonical witnesses, one expands the
-language so that such witnesses can be named.
-
-# Iterating The Construction
-
-One application of the previous step is not enough, because after adjoining new
-constants, one obtains new formulas that may themselves require witnesses. The
-construction is therefore iterated along the natural numbers.
-
-:::definition "def:henkin-language-chain" (lean := "Flypitch.henkin.languageChain")
-The Henkin language chain starts from the original language at stage $`0` and
-applies the one-step witness extension at each successor stage.
-
-This chain uses {uses "def:henkin-one-step-language"}[] and
-{uses "def:language-hom"}[].
+:::theorem "thm:aleph-two-injects-continuum" (lean := "Flypitch.ℵ₂_injects_𝔠")
+In the Cohen Boolean-valued model, `aleph_two` injects into the internal
+continuum.
 :::
 
-The transition maps between stages are injective, so each finite stage embeds
-faithfully into every later one.
+# Cardinal Preservation
 
-# The Infinite Henkin Language
+Adding many reals is not enough by itself. One must also know that the forcing
+does not collapse the relevant cardinals. The countable chain condition
+controls antichains in the Boolean algebra and gives the preservation
+arguments needed to keep `aleph_one` and `aleph_two` separated.
 
-:::definition "def:linfty-language" (lean := "Flypitch.henkin.LInfty")
-The infinite Henkin language $`L_\infty` is the directed colimit of the finite
-Henkin language chain.
+Mathematically, the proof combines two facts:
 
-This combines {uses "def:henkin-language-chain"}[] with
-{uses "def:diagram-colimit"}[].
+- there are at least `aleph_two` many reals in the extension
+- `aleph_one` remains strictly below `aleph_two`
+
+Together they contradict CH, which would place the continuum at `aleph_one`.
+
+:::theorem "thm:not-ch-forced" (lean := "Flypitch.not_CH₂")
+In the Cohen Boolean-valued model, every condition lies below the complement
+of `CH₂`; equivalently, the model forces not-CH.
+
+This theorem uses {uses "def:ch-two"}[] and
+{uses "thm:aleph-two-injects-continuum"}[].
 :::
 
-Mathematically, $`L_\infty` is the language obtained by adjoining all witness
-constants produced at all finite stages and identifying symbols that are the
-same after passing sufficiently far along the chain.
+# From Failure Of CH To Unprovability
 
-# Finite-Stage Representatives
+Suppose ZFC proved CH. By Boolean-valued soundness, every Boolean-valued model
+of ZFC would force CH. But the Cohen model forces not-CH. Hence no such proof
+exists.
 
-The crucial structural fact about $`L_\infty` is that terms and formulas over
-the limit language still come from finite stages.
+:::theorem "thm:ch-unprovable-from-cohen" (lean := "Flypitch.ZFC.CH_f_unprovable")
+The formal theory `ZFC` does not prove the formal sentence `CH_f`.
 
-:::theorem "thm:henkin-comparison-bijective" (lean := "Flypitch.henkin.equivBoundedFormulaComparison")
-Every term, formula, bounded term, and bounded formula over $`L_\infty` is
-represented by a unique compatible germ of corresponding syntax at a finite
-stage of the Henkin chain.
-
-This theorem uses {uses "def:linfty-language"}[],
-{uses "prop:colimit-universal"}[], and {uses "def:fol-bounded-syntax"}[].
+This theorem combines {uses "thm:not-ch-forced"}[],
+{uses "thm:not-ch-formula-sound"}[], and
+{uses "thm:bset-models-zfc"}[].
 :::
 
-:::proof "thm:henkin-comparison-bijective"
-Injectivity comes from the injectivity of the canonical maps into the colimit.
-Surjectivity is proved by structural recursion: each finite syntactic piece of
-an $`L_\infty`-expression already uses only finitely many symbols, so all of
-them appear together at some sufficiently high finite stage.
-:::
+# Lean Side Notes
 
-This theorem is what allows witness arguments in the limit language to be
-reduced to witness arguments at finite stages.
-
-# Witness Sentences And Enough Constants
-
-:::definition "def:henkin-witness-property" (lean := "Flypitch.henkin.witProperty")
-For a formula $`f(x)` and a constant $`c`, the witness property is the sentence
-
-$$`\exists x\, f(x) \to f(c)`
-
-This witness sentence is phrased using {uses "def:fol-bounded-syntax"}[].
-:::
-
-A theory has enough constants if every bounded one-variable formula has some
-constant satisfying this witness property.
-
-# The One-Step Theory Extension
-
-:::definition "def:henkin-theory-step" (lean := "Flypitch.henkin.henkinTheoryStep")
-Given a theory $`T` over $`L`, the one-step Henkin extension is obtained by
-transporting $`T` into the one-step Henkin language and adjoining all witness
-sentences for bounded one-variable formulas over $`L`.
-
-This is the theory-level companion to {uses "def:henkin-one-step-language"}[]
-and {uses "def:henkin-witness-property"}[].
-:::
-
-This is the natural theory-level companion to the language extension: each new
-constant is accompanied by the axiom asserting that it behaves as a witness.
-
-# Consistency Of One Henkin Step
-
-:::theorem "thm:henkin-step-consistent" (lean := "Flypitch.henkin.is_consistent_henkinTheoryStep")
-If $`T` is consistent, then its one-step Henkin extension is also consistent.
-
-This theorem combines {uses "def:henkin-theory-step"}[],
-{uses "thm:generalize-constant"}[], and
-{uses "thm:theory-proof-compactness"}[].
-:::
-
-:::proof "thm:henkin-step-consistent"
-The key point is that each newly adjoined witness constant is fresh. If a
-finite collection of witness axioms produced a contradiction, one could add
-them one at a time. At each stage, the fresh-constant generalization theorem
-converts any illicit proof using the new constant into a proof that no longer
-depends on it. Compactness reduces the argument to finitely many such steps.
-:::
-
-This is the decisive consistency-preservation result in the entire Henkin
-construction.
-
-# Passing To The Limit Theory
-
-The one-step theorem is then iterated along the chain of finite Henkin stages,
-and each finite-stage theory is transported into the limit language
-$`L_\infty`. Their union is the limit theory usually denoted $`T_\infty`.
-
-:::definition "def:tinfty-theories" (lean := "Flypitch.henkin.TInfty")
-The theory $`T_\infty` is the union, inside $`L_\infty`, of the images of all
-finite Henkin stages of the original theory.
-
-This definition uses {uses "def:linfty-language"}[] and
-{uses "def:henkin-theory-step"}[].
-:::
-
-:::theorem "thm:henkin-tinfty-consistent" (lean := "Flypitch.henkin.is_consistent_TInfty")
-If $`T` is consistent, then every finite Henkin stage is consistent, the
-corresponding theories inside $`L_\infty` are consistent, and the limit theory
-$`T_\infty` is consistent.
-
-This theorem uses {uses "thm:henkin-step-consistent"}[],
-{uses "thm:theory-proof-compactness"}[], and
-{uses "def:tinfty-theories"}[].
-:::
-
-:::proof "thm:henkin-tinfty-consistent"
-Finite-stage consistency is an induction using
-{uses "thm:henkin-step-consistent"}[]. The consistency of the union again comes
-from compactness: any finite inconsistent fragment of $`T_\infty` already lies
-in a single finite stage.
-:::
-
-# Enough Constants In The Limit
-
-The next point is to show that the limit theory really has the Henkin witness
-property. Given a bounded one-variable formula over $`L_\infty`, the
-comparison theorem above represents it at some finite stage. The corresponding
-witness sentence has already been inserted at the next stage, and therefore
-appears in the limit theory after transport to $`L_\infty`.
-
-:::theorem "prop:henkinization-has-enough-constants" (lean := "Flypitch.henkin.henkinizationIsHenkin")
-The consistent limit theory obtained from the Henkin chain has enough
-constants.
-
-This proposition uses {uses "thm:henkin-comparison-bijective"}[] and
-{uses "def:henkin-witness-property"}[].
-:::
-
-# Complete Henkin Extensions
-
-:::definition "def:henkin-language-over" (lean := "Flypitch.henkin.henkinLanguage, Flypitch.henkin.henkinLanguageOver")
-The Henkin language of a theory $`T` is the limit language constructed from the
-language underlying $`T`.
-
-This is the theory-relative form of {uses "def:linfty-language"}[].
-:::
-
-:::theorem "thm:complete-henkinization" (lean := "Flypitch.henkin.completeHenkinizationOfConsis")
-Every consistent theory admits a complete Henkin extension in its Henkin
-language.
-
-This theorem combines {uses "thm:henkin-tinfty-consistent"}[],
-{uses "cor:completion-of-consistent-theory"}[],
-{uses "prop:henkinization-has-enough-constants"}[], and
-{uses "def:henkin-language-over"}[].
-:::
-
-:::proof "thm:complete-henkinization"
-The Henkin construction yields a consistent theory with enough constants. One
-then applies the completion theorem from the previous chapter. Since the
-witness property is monotone under extension, the resulting complete theory
-remains Henkin.
-:::
-
-# Present Boundary
-
-This chapter is the current endpoint of the formalized logic-side story. The
-repository already reaches:
-
-- the iterative witness-extension languages
-- the limit language $`L_\infty`
-- consistency of the finite and infinite Henkin theories
-- the existence of complete Henkin extensions of consistent theories
-
-What lies beyond this is not more basic Henkin machinery. The next missing
-pieces are the later completeness-side packaging and then the forcing and
-set-theoretic branch of Flypitch.
-
-# Formalization Note
-
-The Lean file packages these constructions via declarations such as
-`languageStep`, `LInfty`, `witProperty`, `henkinTheoryStep`, `TInfty`, and
-`completeHenkinizationOfConsis`. Their mathematical role is exactly the Henkin
-construction described above.
+The forcing endpoint is `not_CH₂`. The syntactic endpoint is
+`ZFC.CH_f_unprovable`, re-exported in the final namespace as
+`Flypitch.CH_unprovable`.

@@ -1,64 +1,75 @@
 import Verso
 import VersoManual
 import VersoBlueprint
+import Flypitch.ForcingCH
+import Flypitch.ZFC
 
 open Verso.Genre
 open Verso.Genre.Manual
 open Informal
 
-#doc (Manual) "Status And Next Frontier" =>
+set_option linter.hashCommand false
+set_option linter.style.emptyLine false
+set_option linter.style.longLine false
 
-The present blueprint now tells a complete logic-side story: it starts with
-first-order syntax and semantics, passes through compactness and completion,
-develops the language-extension machinery needed for witness arguments, and
-ends with complete Henkin extensions of consistent theories.
+#doc (Manual) "The Model Where CH Holds" =>
 
-# What The Current Port Delivers
+To show that ZFC cannot prove the negation of CH, the proof uses a second
+Boolean-valued universe. This one is built from a collapse algebra. Its role
+is to make the continuum no larger than `aleph_one`, while the usual lower
+bound by omega remains in place.
 
-From a mathematical point of view, the Lean 4 repository already contains:
+# The Collapse Algebra
 
-- a first-order proof system together with soundness
-- the theory-level notions of consistency and completeness
-- compactness in the form needed for finite-fragment arguments
-- maximal and complete consistent extensions
-- the language-colimit and reflection tools needed to manage enlarging
-  languages
-- the Henkin construction through complete Henkin extensions
+The collapse algebra is designed so that the powerset of omega in the
+Boolean-valued universe is covered by a relation whose domain has size
+`aleph_one`. Informally, it names enough data to make every real appear in a
+list indexed by the first uncountable cardinal.
 
-This is already substantial. It means that the model-theoretic infrastructure
-behind the classical Henkin proof is no longer merely planned; it is present in
-verified Lean 4 code.
+:::definition "def:collapse-algebra" (lean := "Flypitch.collapse_algebra.𝔹_collapse")
+The collapse Boolean algebra supplies the Boolean-valued universe in which CH
+holds.
+:::
 
-# What Is Not Yet Present
+# The Surjection Argument
 
-The current state should not be overstated.
+The central construction is a relation from `aleph_one` onto the internal
+powerset of omega. Once this relation is shown to be functional and
+surjective in the Boolean-valued sense, the continuum is at most `aleph_one`.
 
-- the later completeness-side packaging beyond the present Henkin layer is not
-  yet part of the documented Lean 4 surface
-- the forcing-side development has not yet been ported
-- the final integration leading to independence of the continuum hypothesis is
-  therefore still absent
+At the same time, the continuum cannot be countable. The result is exactly the
+cardinal characterization of CH: the continuum is the first uncountable
+cardinal.
 
-So the repository has reached a meaningful stopping point on the logic side,
-but not the full Flypitch endpoint.
+:::theorem "thm:collapse-continuum-bound" (lean := "Flypitch.collapse_algebra.CH₂_true_of_check_functions_eq")
+The collapse construction gives the Boolean-valued cardinal comparison needed
+to prove `CH₂`.
+:::
 
-# The Next Frontier
+:::theorem "thm:ch-forced" (lean := "Flypitch.collapse_algebra.CH₂_true")
+In the collapse Boolean-valued model, every condition lies below `CH₂`;
+equivalently, the model forces CH.
 
-According to the current project boundary, the next major missing development is
-`pSet_ordinal`. This marks the beginning of the forcing-side branch.
+This theorem uses {uses "def:ch-two"}[] and
+{uses "thm:collapse-continuum-bound"}[].
+:::
 
-Once that side of the project begins to land in Lean 4, the natural blueprint
-continuation will move from the present model-theoretic story to the
-set-theoretic and Boolean-valued constructions used in forcing.
+# From CH To Unprovability Of Not-CH
 
-# How The Blueprint Should Grow
+Suppose ZFC proved not-CH. By Boolean-valued soundness, the collapse model
+would force not-CH. But this model forces CH. Hence ZFC cannot prove the
+negation of CH.
 
-The rule for future chapters should remain the same as in this pass:
+:::theorem "thm:not-ch-unprovable-from-collapse" (lean := "Flypitch.ZFC.neg_CH_f_unprovable")
+The formal theory `ZFC` does not prove the negation of the formal sentence
+`CH_f`.
 
-- document only mathematics that is already verified in Lean 4
-- write the chapters as mathematical explanations rather than code tours
-- use Lean names to orient the reader, not to replace the mathematics
+This theorem combines {uses "thm:ch-forced"}[],
+{uses "thm:ch-formula-sound"}[], and {uses "thm:bset-models-zfc"}[].
+:::
 
-When the forcing branch is ported, the next chapters should therefore begin
-with the underlying mathematics of that branch rather than with a list of Lean
-modules.
+# Lean Side Notes
+
+The forcing endpoint is `collapse_algebra.CH₂_true`. The syntactic endpoint
+is `ZFC.neg_CH_f_unprovable`, re-exported in the final namespace as
+`Flypitch.neg_CH_unprovable`.
