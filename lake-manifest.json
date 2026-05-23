@@ -11,7 +11,7 @@
    "inputRev": "v4.29.0",
    "inherited": false,
    "configFile": "lakefile.lean"},
-  {"url": "https://github.com/ejgallego/verso-blueprint",
+  {"url": "https://github.com/leanprover/verso-blueprint",
    "type": "git",
    "subDir": null,
    "scope": "",
